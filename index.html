@@ -618,10 +618,10 @@ onValue(
     if(!game) return;
 
     if(
-      game.state==="countdown" &&
-      game.gameId!==lastGameId
-    ){
-
+  !$("gameArea").classList.contains("hidden") &&
+  game.state==="countdown" &&
+  game.gameId!==lastGameId
+){
       lastGameId=game.gameId;
 
       countdown(game);
@@ -630,24 +630,18 @@ onValue(
 
     if(game.state==="waiting"){
 
-      playing=false;
+playing=false;
 
-      clearTimeout(moleTimer);
-      clearInterval(clockTimer);
+clearTimeout(moleTimer);
+clearInterval(clockTimer);
 
-      hideAll();
+hideAll();score=0;
+$("score").textContent=0;
 
-      score=0;
+$("time").textContent=30;
 
-      $("score").textContent=0;
-      $("time").textContent=30;
-
-      $("status").textContent=
-        "等待主持人開始比賽";
-
-    }
-
-  }
+$("status").textContent=
+  "等待主持人開始比賽"; }
 );
 
 
