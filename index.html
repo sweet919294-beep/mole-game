@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>可愛打地鼠比賽</title>
+<style>
+:root{--brown:#6b4426;--cream:#fff9e9;--green:#72c94a;--line:#ead8b5;--pink:#ff8f9c;--blue:#bfeaff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:linear-gradient(#bfeaff 0 34%,#dff5b2 34% 100%);color:#4a321f}
+.app{max-width:620px;margin:auto;padding:14px 14px 30px}
+.top{text-align:center}.top h1{margin:5px 0;font-size:30px}.room{font-size:13px;background:#ffffffc9;border:2px solid #8bb46d;border-radius:16px;padding:7px 12px;display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.card{background:#fffdf5;border:2px solid #ead8b5;border-radius:18px;padding:10px;text-align:center;box-shadow:0 3px 0 #0000000d}
+.card small{display:block;color:#806c5a}.card b{font-size:27px}
+.player{background:#fffdf1;border:2px solid var(--line);border-radius:20px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.status{font-size:13px;background:#dff5c9;border-radius:999px;padding:5px 9px}
+.field{margin-top:12px;background:linear-gradient(#8fda55,#65bd3f);border-radius:24px;padding:16px 12px 12px;box-shadow:inset 0 3px 12px #ffffff4d}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.hole{border:0;aspect-ratio:1/1;border-radius:50%;background:radial-gradient(ellipse at center,#30190e 0 48%,#855025 50% 59%,#c9823c 61% 72%,#8b5529 74%);position:relative;overflow:hidden;touch-action:manipulation}
+.mole{position:absolute;left:13%;right:13%;bottom:8%;height:75%;border-radius:50% 50% 44% 44%;background:#9b6a43;border:3px solid #6d4327;display:flex;align-items:center;justify-content:center;font-size:36px;animation:pop .12s ease-out}
+.mole.gold{background:#ffd45a;border-color:#e29a19}.mole.bomb{background:#393939;border-color:#111}
+@keyframes pop{from{transform:translateY(80%)}to{transform:none}}
+.legend{text-align:center;background:#fffbe9;margin-top:12px;padding:9px;border-radius:14px;font-size:14px}
+.controls{margin-top:14px;background:#fff9e9;border:2px solid var(--line);border-radius:20px;padding:13px}
+.controls h2{font-size:18px;margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap}
+button.ctrl{flex:1;min-width:100px;border:0;border-radius:14px;padding:13px;font-size:16px;font-weight:700}
+.start{background:#45ad48;color:white}.reset{background:#5b9bd5;color:white}.sound{background:#ff9aa5;color:#4a321f}
+.result{display:none;margin-top:12px;background:#fff;border:2px solid #f1cf6a;border-radius:18px;padding:14px;text-align:center}
+.note{text-align:center;font-size:12px;color:#6e5b48;margin-top:10px}
+@media(max-width:380px){.top h1{font-size:25px}.mole{font-size:29px}.board{gap:9px}.card b{font-size:23px}}
+</style>
+</head>
+<body>
+<main class="app">
+ <header class="top">
+  <h1>🐹 打地鼠比賽 🌱</h1>
+  <div class="room">試玩房間：MOLE-5208</div>
+ </header>
+
+ <section class="stats">
+  <div class="card"><small>⏱ 剩餘時間</small><b id="time">30.0</b></div>
+  <div class="card"><small>⭐ 我的分數</small><b id="score">0</b></div>
+  <div class="card"><small>🏆 最高紀錄</small><b id="best">0</b></div>
+ </section>
+
+ <section class="player">
+  <div><b>🐹 小寶</b><br><span class="status" id="status">等待開始</span></div>
+  <button class="ctrl sound" id="sound">🔊 音效 ON</button>
+ </section>
+
+ <section class="field">
+  <div class="board" id="board"></div>
+  <div class="legend">🐹 +1　🌟 金色 +3　💣 炸彈 -2</div>
+ </section>
+
+ <section class="controls">
+  <h2>🎩 主持人試玩控制</h2>
+  <div class="row">
+   <button class="ctrl start" id="start">▶ 開始 30 秒</button>
+   <button class="ctrl reset" id="reset">↻ 重設</button>
+  </div>
+  <div class="result" id="result"></div>
+  <div class="note">這是單機試玩版；確認玩法後再接真正多人同步與主持人後台。</div>
+ </section>
+</main>
+<script>
+(()=>{
+const board=document.querySelector('#board'),timeEl=document.querySelector('#time'),scoreEl=document.querySelector('#score'),
+bestEl=document.querySelector('#best'),statusEl=document.querySelector('#status'),startBtn=document.querySelector('#start'),
+resetBtn=document.querySelector('#reset'),soundBtn=document.querySelector('#sound'),result=document.querySelector('#result');
+let score=0,best=0,left=30,playing=false,current=-1,type='mole',spawnTimer=null,clockTimer=null,sound=true;
+const holes=[];
+for(let i=0;i<9;i++){const h=document.createElement('button');h.className='hole';h.setAttribute('aria-label','地鼠洞 '+(i+1));
+h.addEventListener('click',()=>hit(i));board.appendChild(h);holes.push(h)}
+function render(){holes.forEach((h,i)=>{h.innerHTML='';if(i===current){const m=document.createElement('div');m.className='mole '+type;
+m.textContent=type==='gold'?'🌟':type==='bomb'?'💣':'🐹';h.appendChild(m)}})}
+function beep(freq=500,d=.045){if(!sound)return;try{const A=window.AudioContext||window.webkitAudioContext;const a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;g.gain.value=.05;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function spawn(){if(!playing)return;current=Math.floor(Math.random()*9);const r=Math.random();type=r<.13?'gold':r<.22?'bomb':'mole';render();spawnTimer=setTimeout(spawn,560)}
+function hit(i){if(!playing||i!==current)return;if(type==='gold'){score+=3;beep(800)}else if(type==='bomb'){score=Math.max(0,score-2);beep(180,.08)}else{score++;beep(560)}
+scoreEl.textContent=score;current=-1;render()}
+function finish(){if(!playing)return;playing=false;clearTimeout(spawnTimer);clearInterval(clockTimer);current=-1;render();left=0;timeEl.textContent='0.0';statusEl.textContent='比賽結束';
+if(score>best){best=score;bestEl.textContent=best}result.style.display='block';result.innerHTML='<b>🎉 本場 '+score+' 分</b><br>再玩一次看看能不能破紀錄！';startBtn.disabled=false}
+function start(){if(playing)return;score=0;left=30;scoreEl.textContent='0';timeEl.textContent='30.0';result.style.display='none';statusEl.textContent='3、2、1…';startBtn.disabled=true;
+let c=3;const countdown=setInterval(()=>{c--;if(c>0){statusEl.textContent=c+'…'}else{clearInterval(countdown);playing=true;statusEl.textContent='比賽進行中！';const end=performance.now()+30000;spawn();
+clockTimer=setInterval(()=>{left=Math.max(0,(end-performance.now())/1000);timeEl.textContent=left.toFixed(1);if(left<=0)finish()},50)}},650)}
+function reset(){playing=false;clearTimeout(spawnTimer);clearInterval(clockTimer);score=0;left=30;current=-1;render();scoreEl.textContent='0';timeEl.textContent='30.0';statusEl.textContent='等待開始';result.style.display='none';startBtn.disabled=false}
+startBtn.addEventListener('click',start);resetBtn.addEventListener('click',reset);soundBtn.addEventListener('click',()=>{sound=!sound;soundBtn.textContent=sound?'🔊 音效 ON':'🔇 音效 OFF'});
+render();
+})();
+</script>
+</body>
+</html>
