@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🐷 小豬打地鼠樂園</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--pink:#ff8fbd;--pink2:#ffc9df;--deep:#c95082;--cream:#fff8fb;--ink:#6a3850;--card:#fff;--line:#f3bfd3;--green:#a9df86;--hole:#8b5b45}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:linear-gradient(180deg,#ffe8f1 0%,#fff8fb 48%,#fff0f6 100%);color:var(--ink);touch-action:manipulation;min-height:100vh}
+button,input{font-family:inherit}.app{width:min(100%,620px);margin:auto;padding:16px}.hero{text-align:center;padding:8px 0 14px}.heroPig{font-size:54px;line-height:1}.hero h1{margin:4px 0 2px;font-size:30px;color:#b84376}.sub{text-align:center;color:#9b6680;margin:0}.card{background:#ffffffdd;border:2px solid var(--line);border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 6px 18px #c9508212}.card h2{margin:2px 0 12px}.hidden{display:none!important}
+input{width:100%;font-size:18px;padding:14px 15px;border:2px solid #efbad0;border-radius:16px;margin:6px 0;background:#fffafd;color:var(--ink);outline:none}input:focus{border-color:var(--pink)}button{border:0;border-radius:16px;padding:14px 16px;font-size:17px;font-weight:800;cursor:pointer;touch-action:manipulation}.primary{width:100%;background:linear-gradient(180deg,#ff9ac4,#ee74a8);color:#fff;margin-top:9px;box-shadow:0 4px 0 #cf5f91}.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #cf5f91}.soft{width:100%;background:#fff0f6;color:#b84b79;border:2px solid #f0b9cf}.note{font-size:13px;color:#9b6d82;text-align:center;margin-top:11px}.pickerTitle{font-weight:900;margin:12px 0 7px}.picker{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.pick{min-height:68px;padding:7px 4px;background:#fff;border:2px solid #d8d7ca;color:#735767;font-size:25px}.pick small{display:block;font-size:12px;margin-top:3px}.pick.active{background:#fff0f6;border-color:#e96f9c;color:#bf4b78}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat{background:#fff;border:2px solid #f3bfd3;border-radius:18px;padding:10px 4px;text-align:center}.stat small{display:block;color:#a06c84}.stat strong{font-size:23px;color:#b84376}.status{text-align:center;background:#fff0a8;border:2px solid #f4db75;border-radius:16px;padding:11px;margin:10px 0;font-weight:900;color:#8a5a19}
+.boardWrap{background:#ffd7e6;border:3px solid #f4aac7;border-radius:26px;padding:10px}.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:var(--green);padding:12px;border-radius:22px}.hole{position:relative;width:100%;aspect-ratio:1/1;border:0;padding:0;background:var(--hole);border-radius:50%;overflow:hidden;box-shadow:inset 0 9px 0 #704534;touch-action:manipulation}.pig{position:absolute;pointer-events:none;left:11%;right:11%;top:8%;bottom:-10%;border-radius:46% 46% 38% 38%;background:#ff9fbd;border:4px solid #db6f97;transform:translateY(118%);transition:transform .12s}.pig::before{content:"";position:absolute;width:14px;height:14px;background:#5a3140;border-radius:50%;left:23%;top:29%;box-shadow:44px 0 #5a3140}.pig::after{content:"🐽";position:absolute;left:50%;top:43%;transform:translateX(-50%);font-size:30px;line-height:1}.ear{position:absolute;pointer-events:none;width:24px;height:28px;background:#ff9fbd;border:4px solid #db6f97;border-radius:70% 70% 35% 35%;top:6%;z-index:0;transform:translateY(118%);transition:transform .12s}.ear.left{left:18%;transform:translateY(118%) rotate(-20deg)}.ear.right{right:18%;transform:translateY(118%) rotate(20deg)}.hole.up .pig{transform:translateY(0)}.hole.up .ear.left{transform:translateY(0) rotate(-20deg)}.hole.up .ear.right{transform:translateY(0) rotate(20deg)}.hole.gold .pig,.hole.gold .ear{background:#ffd75f;border-color:#d9a91d}.hole.bomb .pig{background:#555;border-color:#333}.hole.bomb .ear{display:none}.hole.bomb .pig::before{display:none}.hole.bomb .pig::after{content:"💣";font-size:40px;top:35%}
+.legend{text-align:center;font-size:13px;color:#8f6077;margin-top:10px;line-height:1.7}.rankrow{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #f5d7e3}.rankrow:last-child{border:0}.me{font-weight:900;color:#c14d7e}.countdown{position:fixed;inset:0;background:#ff91bde8;display:flex;justify-content:center;align-items:center;flex-direction:column;color:#fff;font-size:104px;font-weight:1000;z-index:99;text-shadow:0 4px 0 #b84e7d}.countdown small{font-size:24px;margin-top:8px}.result{position:fixed;inset:0;background:#fff3f8ee;display:flex;align-items:center;justify-content:center;z-index:100;padding:22px}.resultCard{width:min(100%,430px);background:#fff;border:3px solid #f2b5cd;border-radius:28px;padding:24px;text-align:center;box-shadow:0 14px 40px #b34a7722}.resultPig{font-size:70px}.resultCard h2{font-size:28px;margin:4px 0}.bigScore{font-size:54px;font-weight:1000;color:#c4477b;margin:4px 0}.bestLine{font-weight:800;color:#9a6680;margin-bottom:16px}.actions{display:grid;gap:10px}.tiny{text-align:center;font-size:12px;color:#a16e85;margin-top:8px}
+@media (max-width:390px){.hero h1{font-size:27px}.app{padding:12px}.board{gap:8px;padding:10px}.pig::after{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero"><div class="heroPig">🐷</div><h1>小豬打地鼠樂園</h1><p class="sub">隨時加入，挑戰自己的最高分！</p></header>
+
+  <section id="joinCard" class="card">
+    <h2>🌸 來玩吧！</h2>
+    <input id="nickname" maxlength="12" placeholder="輸入小朋友的名字">
+    <div class="pickerTitle">① 選格數</div>
+    <div class="picker" id="cellPicker">
+      <button class="pick" data-cells="6">🐣<small>6 格・簡單</small></button>
+      <button class="pick active" data-cells="9">🐷<small>9 格・普通</small></button>
+      <button class="pick" data-cells="12">⭐<small>12 格・挑戰</small></button>
+    </div>
+    <div class="pickerTitle">② 選速度</div>
+    <div class="picker" id="speedPicker">
+      <button class="pick" data-speed="slow">🐢<small>慢慢玩</small></button>
+      <button class="pick active" data-speed="normal">🐷<small>普通</small></button>
+      <button class="pick" data-speed="fast">🚀<small>快快玩</small></button>
+    </div>
+    <button id="joinBtn" class="primary">🐷 開始玩</button>
+    <div class="note">按下後倒數 4 秒，直接開始 30 秒遊戲</div>
+  </section>
+
+  <section id="gameArea" class="hidden">
+    <div class="stats">
+      <div class="stat"><small>玩家</small><strong id="myName">－</strong></div>
+      <div class="stat"><small>本局</small><strong id="score">0</strong></div>
+      <div class="stat"><small>時間</small><strong id="time">30</strong></div>
+    </div>
+    <div id="status" class="status">準備好了嗎？</div>
+    <div class="boardWrap"><div id="board" class="board"></div></div>
+    <div class="legend">🐷 小豬 +1　🌟 黃金豬 +3　💣 炸彈 −2</div>
+    <button id="restartBtn" class="primary hidden">再玩一次</button>
+  </section>
+
+  <section class="card">
+    <h2>🏆 最高分排行榜</h2>
+    <div id="ranking">尚未有玩家加入</div>
+    <div class="tiny">每個名字只保留最高分，玩差了也不會蓋掉好成績</div>
+  </section>
+</div>
+
+<div id="countdown" class="countdown hidden"><div id="countNum">4</div><small>準備打小豬！</small></div>
+<div id="result" class="result hidden">
+  <div class="resultCard">
+    <div class="resultPig">🐷🎉</div>
+    <h2>時間到！</h2>
+    <div id="finalScore" class="bigScore">0 分</div>
+    <div id="bestLine" class="bestLine">最高分：0</div>
+    <div class="actions">
+      <button id="againBtn" class="primary">再玩一次</button>
+      <button id="changeNameBtn" class="soft">換一個名字</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getDatabase, ref, set, update, onValue, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+const firebaseConfig={apiKey:"AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",authDomain:"mole-game-3073f.firebaseapp.com",databaseURL:"https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"mole-game-3073f",storageBucket:"mole-game-3073f.firebasestorage.app",messagingSenderId:"942915688837",appId:"1:942915688837:web:4e6584ad32100b2cc24cec"};
+const app=initializeApp(firebaseConfig);const db=getDatabase(app);const ROOM="pig-test";const $=id=>document.getElementById(id);
+let playerId=localStorage.getItem("pigPlayerId");if(!playerId){playerId="p_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);localStorage.setItem("pigPlayerId",playerId)}
+let nickname="",score=0,bestScore=0,playing=false,moleTimer=null,clockTimer=null,currentHole=-1,endAt=0,cells=9,speedMode="normal";
+
+const board=$("board");
+function buildBoard(){
+  board.innerHTML="";board.style.gridTemplateColumns=cells===12?"repeat(4,1fr)":"repeat(3,1fr)";
+  for(let i=0;i<cells;i++){
+    const hole=document.createElement("button");hole.className="hole";hole.dataset.index=i;hole.setAttribute("aria-label","小豬洞 "+(i+1));
+    const leftEar=document.createElement("div");leftEar.className="ear left";const rightEar=document.createElement("div");rightEar.className="ear right";const pig=document.createElement("div");pig.className="pig";
+    hole.append(leftEar,rightEar,pig);hole.addEventListener("click",()=>hitPig(i,hole));board.appendChild(hole);
+  }
+}
+buildBoard();
+document.querySelectorAll("#cellPicker .pick").forEach(b=>b.onclick=()=>{document.querySelectorAll("#cellPicker .pick").forEach(x=>x.classList.remove("active"));b.classList.add("active");cells=Number(b.dataset.cells);buildBoard();});
+document.querySelectorAll("#speedPicker .pick").forEach(b=>b.onclick=()=>{document.querySelectorAll("#speedPicker .pick").forEach(x=>x.classList.remove("active"));b.classList.add("active");speedMode=b.dataset.speed;});
+
+async function ensurePlayer(){
+  const playerRef=ref(db,`rooms/${ROOM}/players/${playerId}`);const snap=await get(playerRef);const old=snap.val();
+  if(old&&old.name===nickname){bestScore=Number(old.bestScore??old.score)||0;await update(playerRef,{name:nickname,bestScore,score:bestScore,lastSeen:serverTimestamp()});}
+  else{bestScore=0;await set(playerRef,{name:nickname,bestScore:0,score:0,joinedAt:serverTimestamp(),lastSeen:serverTimestamp()});}
+}
+
+$("joinBtn").onclick=async()=>{
+  const name=$("nickname").value.trim();if(!name){alert("請先輸入名字");return}
+  nickname=name;await ensurePlayer();$("joinCard").classList.add("hidden");$("gameArea").classList.remove("hidden");$("myName").textContent=nickname;startCountdown();
+};
+
+function hitPig(index,hole){
+  if(!playing||index!==currentHole||!hole.classList.contains("up"))return;
+  let points=1;if(hole.classList.contains("gold"))points=3;if(hole.classList.contains("bomb"))points=-2;
+  score=Math.max(0,score+points);$("score").textContent=score;hole.classList.remove("up");currentHole=-1;
+}
+function hideAll(){document.querySelectorAll(".hole").forEach(h=>h.className="hole");currentHole=-1}
+function spawnPig(){
+  if(!playing)return;hideAll();const holes=document.querySelectorAll(".hole");const next=Math.floor(Math.random()*holes.length);currentHole=next;const hole=holes[next];const r=Math.random();if(r<.12)hole.classList.add("bomb");else if(r<.27)hole.classList.add("gold");hole.classList.add("up");const ranges={slow:[950,1450],normal:[600,1000],fast:[380,650]};const [lo,hi]=ranges[speedMode];const speed=lo+Math.random()*(hi-lo);clearTimeout(moleTimer);moleTimer=setTimeout(()=>{if(hole.classList.contains("up")){hole.classList.remove("up");currentHole=-1}spawnPig()},speed);
+}
+function startCountdown(){
+  if(playing)return;$("result").classList.add("hidden");$("restartBtn").classList.add("hidden");score=0;$("score").textContent="0";$("time").textContent="30";$("status").textContent="準備好了嗎？";hideAll();
+  const overlay=$("countdown");const num=$("countNum");overlay.classList.remove("hidden");let n=4;num.textContent=n;
+  const tick=setInterval(()=>{n--;if(n>0){num.textContent=n;return}clearInterval(tick);num.textContent="GO!";setTimeout(()=>{overlay.classList.add("hidden");startLocalGame()},450)},700);
+}
+function startLocalGame(){
+  score=0;$("score").textContent="0";playing=true;endAt=Date.now()+30000;$("status").textContent="快打小豬！";spawnPig();clearInterval(clockTimer);clockTimer=setInterval(()=>{const left=Math.max(0,Math.ceil((endAt-Date.now())/1000));$("time").textContent=left;if(left<=0)finishGame()},200);
+}
+async function finishGame(){
+  if(!playing)return;playing=false;clearTimeout(moleTimer);clearInterval(clockTimer);hideAll();$("time").textContent="0";$("status").textContent="這局完成！";
+  if(score>bestScore){bestScore=score;await update(ref(db,`rooms/${ROOM}/players/${playerId}`),{name:nickname,bestScore,score:bestScore,cells,speedMode,lastPlayedAt:serverTimestamp()});}
+  else{await update(ref(db,`rooms/${ROOM}/players/${playerId}`),{name:nickname,cells,speedMode,lastPlayedAt:serverTimestamp()});}
+  $("finalScore").textContent=score+" 分";$("bestLine").textContent="最高分："+bestScore;$("result").classList.remove("hidden");
+}
+
+$("againBtn").onclick=startCountdown;$("restartBtn").onclick=startCountdown;
+$("changeNameBtn").onclick=()=>{playing=false;clearTimeout(moleTimer);clearInterval(clockTimer);hideAll();$("result").classList.add("hidden");$("gameArea").classList.add("hidden");$("joinCard").classList.remove("hidden");$("nickname").value="";$("nickname").focus();};
+
+onValue(ref(db,`rooms/${ROOM}/players`),snapshot=>{
+  const data=snapshot.val()||{};const players=Object.entries(data).map(([id,p])=>({id,name:p.name||"小玩家",score:Number(p.bestScore??p.score)||0,cells:p.cells||9,speedMode:p.speedMode||"normal"})).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));const rank=$("ranking");if(players.length===0){rank.textContent="尚未有玩家加入";return}rank.innerHTML="";players.forEach((p,i)=>{const row=document.createElement("div");row.className="rankrow"+(p.id===playerId?" me":"");const medals=["🥇","🥈","🥉"];const left=document.createElement("span");left.textContent=`${medals[i]||(i+1)+'.'} ${p.name}`;const right=document.createElement("strong");const speedLabel={slow:"慢",normal:"普通",fast:"快"}[p.speedMode]||"普通";right.textContent=`${p.score} 分｜${p.cells}格・${speedLabel}`;row.append(left,right);rank.appendChild(row)});
+});
+</script>
+</body>
+</html>
