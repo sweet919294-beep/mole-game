@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小豬打地鼠樂園・測試版</title>
+<style>
+:root{
+  --cream:#fff8df;--pink:#ff557d;--pink2:#ffdce5;--green:#c9f26a;
+  --brown:#8b4c21;--text:#63301f;--panel:#fff9e7;--blue:#e7f5ff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:var(--text);
+background:linear-gradient(180deg,#fff6f8,#f7f8dc);min-height:100vh}
+.wrap{width:min(1180px,96vw);margin:auto;padding:12px 0 28px}
+.hero{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;background:#fff7fa;
+border:2px solid #fff;border-radius:24px;padding:10px 18px;box-shadow:0 4px 14px #8c68441c}
+.hero h1{margin:0;font-size:clamp(27px,4vw,45px);color:#7a371c;text-shadow:0 2px #fff}
+.hero p{display:none}
+.topstat{min-width:170px;padding:8px 20px;border:2px solid #ffd25c;border-radius:18px;background:#fffbea;text-align:center}
+.topstat.time{border-color:#ffb7c7;background:#fff4f7}.topstat small{font-weight:800}.topstat strong{display:block;font-size:30px}
+.layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,1.05fr);gap:12px;margin-top:12px}
+.left,.side{min-width:0}.card{background:var(--panel);border:2px solid #f1dca3;border-radius:22px;padding:12px;margin-bottom:12px}
+.gamecard{background:#fff;border-color:#d9e9bc}
+.setup-inline .name{width:100%;border:2px solid #ffd2dc;border-radius:14px;padding:10px;font-size:17px;margin-bottom:9px}
+.label{font-weight:900;margin:7px 0 5px}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.choice{border:0;background:var(--blue);border-radius:18px;min-height:42px;font-weight:900;color:#3675a0;font-size:14px}
+.choice b{display:inline;font-size:16px;margin-right:3px}.choice.selected{background:var(--pink);color:#fff}
+.start,.again{width:100%;border:0;border-radius:20px;background:var(--pink);color:white;font-size:20px;font-weight:900;padding:13px;margin-top:10px}
+.status{text-align:center;font-weight:900;background:#fff5c9;border-radius:12px;padding:7px;margin-bottom:8px}
+.stats{display:none}
+.board{display:grid;gap:12px;
+background:
+radial-gradient(circle at 8% 10%,#fff 0 3px,#ffd84f 3px 5px,transparent 6px),
+radial-gradient(circle at 91% 84%,#fff 0 3px,#ffd84f 3px 5px,transparent 6px),
+radial-gradient(circle at 38% 15%,#78c83d 0 7px,transparent 8px),
+radial-gradient(circle at 70% 70%,#79c83c 0 8px,transparent 9px),
+linear-gradient(145deg,#dafa8b,#aee94e);
+background-size:auto;
+border:3px solid #e7efc9;border-radius:26px;padding:16px;min-height:560px;align-content:center;
+box-shadow:inset 0 5px 18px #6baa3028}
+.board.c6,.board.c9{grid-template-columns:repeat(3,1fr)}.board.c12{grid-template-columns:repeat(4,1fr)}
+.hole{aspect-ratio:1.55;border:0;border-radius:50%;
+background:
+radial-gradient(ellipse at 50% 45%,#160904 0 38%,#351508 46%,#6f3515 49%,#c87332 53%,#e39b55 63%,#9b4f22 70%,#633013 73%);
+box-shadow:0 8px 5px #5b3a2038,inset 0 -7px 9px #54240c55,inset 0 7px 5px #ffd08b55;
+display:flex;align-items:flex-end;justify-content:center;overflow:hidden;padding:0;cursor:pointer;position:relative}
+.pig-svg{width:72%;height:95%;display:block;pointer-events:none}
+.legend{display:none}.result{text-align:center;background:#fff0f5;border:2px solid #ffc0d2;border-radius:16px;padding:10px;margin-top:8px}
+.result strong{font-size:30px;color:#e84975}.hidden{display:none!important}
+.side h3{margin:0 0 8px;font-size:20px}.legend-side .role{display:flex;align-items:center;justify-content:space-between;background:white;border-radius:13px;padding:6px 10px;margin:6px 0;font-weight:900}
+.legend-side svg{width:42px;height:42px;vertical-align:middle}.role-name{display:flex;align-items:center;gap:7px}.pts{padding:4px 12px;border-radius:14px;color:#fff;background:var(--pink)}
+.role:nth-child(2) .pts{background:#ff9f18}.role:nth-child(3) .pts{background:#7547df}
+.row{display:flex;justify-content:space-between;gap:8px;padding:8px 2px;border-bottom:1px solid #eadfc5}.row:last-child{border:0}
+.tag{font-size:10px;background:#f0ede5;border-radius:8px;padding:2px 5px}.note{font-size:11px;text-align:center;color:#8a7468;margin-top:7px}
+.mobile-title{display:none}
+@media(max-width:760px){
+ .hero{grid-template-columns:1fr 1fr}.hero h1{grid-column:1/-1;text-align:center}.topstat{min-width:0}
+ .layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr;gap:0}
+ .board{min-height:0;padding:10px;gap:7px}.hole{aspect-ratio:1.2}.pig-svg{width:82%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>🐷 小豬打打樂 🌱⭐</h1>
+    <div class="topstat"><small>🏆 分數</small><strong id="scoreTop">0</strong></div>
+    <div class="topstat time"><small>⏱️ 時間</small><strong id="timeTop">30</strong></div>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <section id="game" class="card gamecard">
+        <div class="stats">
+          <strong id="who">小豬</strong><strong id="score">0</strong><strong id="time">30</strong>
+        </div>
+        <div id="status" class="status">選好設定後，按「開始遊戲」</div>
+        <div id="board" class="board c9"></div>
+        <div id="legend" class="legend"></div>
+        <div id="result" class="result hidden">
+          <div>🎉 挑戰完成！</div>
+          <strong><span id="final">0</span> 分</strong>
+          <div id="settingText"></div>
+          <button id="again" class="again" type="button">再玩一次</button>
+        </div>
+      </section>
+      <button id="start" class="start" type="button">▶ 開始遊戲</button>
+    </main>
+
+    <aside class="side">
+      <section id="setup" class="card setup-inline">
+        <h3>⚙️ 遊戲設定</h3>
+        <input id="name" class="name" maxlength="10" placeholder="輸入小朋友的名字">
+        <div class="label">格子數</div>
+        <div class="choices">
+          <button class="choice cells" data-cells="6" type="button"><b>🐣</b>6格</button>
+          <button class="choice cells selected" data-cells="9" type="button"><b>🐾</b>9格</button>
+          <button class="choice cells" data-cells="12" type="button"><b>⭐</b>12格</button>
+        </div>
+        <div class="label">速度</div>
+        <div class="choices">
+          <button class="choice speed" data-ms="1300" data-mode="慢" type="button"><b>🐌</b>慢</button>
+          <button class="choice speed selected" data-ms="900" data-mode="普通" type="button"><b>🐾</b>普通</button>
+          <button class="choice speed" data-ms="600" data-mode="快" type="button"><b>⚡</b>快</button>
+        </div>
+      </section>
+
+      <section class="card legend-side">
+        <h3>⭐ 角色說明</h3>
+        <div class="role"><span class="role-name"><span id="normalIcon"></span>普通豬</span><span class="pts">+1分</span></div>
+        <div class="role"><span class="role-name"><span id="goldIcon"></span>黃金豬</span><span class="pts">+3分</span></div>
+        <div class="role"><span class="role-name"><span id="badIcon"></span>搗蛋豬</span><span class="pts">−2分</span></div>
+      </section>
+
+      <section class="card rank">
+        <h3>🏆 小豬高手榜（測試版）</h3>
+        <div id="rankRows"><div class="row"><span>還沒有成績</span><strong>—</strong></div></div>
+        <div class="note">只保留每位玩家的最高分。</div>
+      </section>
+    </aside>
+  </div>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",
+  authDomain: "mole-game-3073f.firebaseapp.com",
+  databaseURL: "https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mole-game-3073f",
+  storageBucket: "mole-game-3073f.firebasestorage.app",
+  messagingSenderId: "942915688837",
+  appId: "1:942915688837:web:4e6584ad32100b2cc24cec"
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const TEST_ROOT = "pig_test_v2";
+
+function normalPig(){
+return `<svg class="pig-svg" viewBox="0 0 160 140" aria-hidden="true">
+<defs><radialGradient id="p1" cx="38%" cy="28%"><stop stop-color="#ffd9df"/><stop offset=".55" stop-color="#ff9fb3"/><stop offset="1" stop-color="#ee718f"/></radialGradient><filter id="s1"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".22"/></filter></defs>
+<g filter="url(#s1)">
+<path d="M33 53 Q13 29 31 20 Q49 29 52 49Z" fill="#f47f9b"/><path d="M127 53 Q147 29 129 20 Q111 29 108 49Z" fill="#f47f9b"/>
+<path d="M35 45 Q25 31 32 28 Q42 32 46 46Z" fill="#ffc0cc"/><path d="M125 45 Q135 31 128 28 Q118 32 114 46Z" fill="#ffc0cc"/>
+<ellipse cx="80" cy="82" rx="55" ry="51" fill="url(#p1)" stroke="#e96788" stroke-width="2"/>
+<ellipse cx="53" cy="82" rx="11" ry="8" fill="#ff829e" opacity=".5"/><ellipse cx="107" cy="82" rx="11" ry="8" fill="#ff829e" opacity=".5"/>
+<path d="M49 66 Q57 77 65 66" fill="none" stroke="#5b2835" stroke-width="6" stroke-linecap="round"/><path d="M95 66 Q103 77 111 66" fill="none" stroke="#5b2835" stroke-width="6" stroke-linecap="round"/>
+<ellipse cx="80" cy="84" rx="21" ry="15" fill="#f36f91" stroke="#d95175" stroke-width="2"/><ellipse cx="72" cy="83" rx="3.5" ry="5" fill="#7b3447"/><ellipse cx="88" cy="83" rx="3.5" ry="5" fill="#7b3447"/>
+<path d="M61 103 Q80 125 99 103 Q96 126 80 129 Q64 126 61 103Z" fill="#7b2e3e"/><path d="M69 113 Q80 108 91 113 Q86 121 80 121 Q74 121 69 113Z" fill="#ff7d8f"/>
+<ellipse cx="45" cy="126" rx="18" ry="12" fill="#f59aae"/><ellipse cx="115" cy="126" rx="18" ry="12" fill="#f59aae"/><path d="M43 124 l6 9" stroke="#a7535e" stroke-width="3"/><path d="M117 124 l-6 9" stroke="#a7535e" stroke-width="3"/>
+<ellipse cx="61" cy="49" rx="15" ry="7" fill="#fff" opacity=".28" transform="rotate(-20 61 49)"/>
+</g></svg>`;
+}
+function goldPig(){
+return `<svg class="pig-svg" viewBox="0 0 160 145" aria-hidden="true">
+<defs><radialGradient id="g1" cx="38%" cy="28%"><stop stop-color="#fff49a"/><stop offset=".55" stop-color="#ffc934"/><stop offset="1" stop-color="#ee9d0d"/></radialGradient><filter id="s2"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".25"/></filter></defs>
+<g filter="url(#s2)">
+<path d="M34 58 Q14 34 32 25 Q49 34 52 53Z" fill="#f1a813"/><path d="M126 58 Q146 34 128 25 Q111 34 108 53Z" fill="#f1a813"/>
+<path d="M35 49 Q25 36 33 32 Q43 37 46 50Z" fill="#ffd65d"/><path d="M125 49 Q135 36 127 32 Q117 37 114 50Z" fill="#ffd65d"/>
+<path d="M52 32 L58 9 L72 23 L81 4 L92 23 L105 9 L110 34Z" fill="#ffd426" stroke="#c77c00" stroke-width="3"/><circle cx="58" cy="9" r="5" fill="#fff17a"/><circle cx="81" cy="5" r="5" fill="#fff17a"/><circle cx="105" cy="9" r="5" fill="#fff17a"/><path d="M78 19 l6 0 4 7-7 6-7-6Z" fill="#ff6847"/>
+<ellipse cx="80" cy="87" rx="55" ry="50" fill="url(#g1)" stroke="#e49808" stroke-width="2"/>
+<ellipse cx="53" cy="88" rx="11" ry="8" fill="#ff9d37" opacity=".55"/><ellipse cx="107" cy="88" rx="11" ry="8" fill="#ff9d37" opacity=".55"/>
+<path d="M49 71 Q57 82 65 71" fill="none" stroke="#563313" stroke-width="6" stroke-linecap="round"/><path d="M95 71 Q103 82 111 71" fill="none" stroke="#563313" stroke-width="6" stroke-linecap="round"/>
+<ellipse cx="80" cy="89" rx="21" ry="15" fill="#f4a116" stroke="#d68100" stroke-width="2"/><ellipse cx="72" cy="88" rx="3.5" ry="5" fill="#75400c"/><ellipse cx="88" cy="88" rx="3.5" ry="5" fill="#75400c"/>
+<path d="M61 108 Q80 130 99 108 Q96 131 80 134 Q64 131 61 108Z" fill="#7b3b12"/><path d="M69 118 Q80 113 91 118 Q86 126 80 126 Q74 126 69 118Z" fill="#ff7c58"/>
+<ellipse cx="45" cy="131" rx="18" ry="11" fill="#f7b82b"/><ellipse cx="115" cy="131" rx="18" ry="11" fill="#f7b82b"/>
+<path d="M18 68 l5 8 9 1-7 6 2 9-9-5-8 5 2-9-7-6 9-1Z" fill="#fff6a5"/><path d="M138 58 l4 6 7 1-5 5 1 7-7-4-6 4 1-7-5-5 7-1Z" fill="#fff6a5"/>
+</g></svg>`;
+}
+function rascalPig(){
+return `<svg class="pig-svg" viewBox="0 0 160 140" aria-hidden="true">
+<defs><radialGradient id="r1" cx="38%" cy="28%"><stop stop-color="#ffd6dc"/><stop offset=".55" stop-color="#ff9caf"/><stop offset="1" stop-color="#ed708c"/></radialGradient><filter id="s3"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".23"/></filter></defs>
+<g filter="url(#s3)">
+<path d="M33 53 Q13 29 31 20 Q49 29 52 49Z" fill="#f47f9b"/><path d="M127 53 Q147 29 129 20 Q111 29 108 49Z" fill="#f47f9b"/>
+<ellipse cx="80" cy="82" rx="55" ry="51" fill="url(#r1)" stroke="#e96788" stroke-width="2"/>
+<path d="M28 57 Q80 39 132 57 L127 84 Q80 70 33 84Z" fill="#25252c"/><path d="M130 59 Q145 49 154 55 L145 67 156 75 Q144 80 130 70Z" fill="#25252c"/>
+<ellipse cx="56" cy="66" rx="15" ry="12" fill="#fff"/><circle cx="58" cy="66" r="6" fill="#2c2529"/><circle cx="61" cy="62" r="2.5" fill="#fff"/>
+<path d="M94 66 Q103 77 112 66" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+<path d="M42 48 Q52 40 63 45" fill="none" stroke="#4a222b" stroke-width="5" stroke-linecap="round"/><path d="M98 45 Q109 40 119 48" fill="none" stroke="#4a222b" stroke-width="5" stroke-linecap="round"/>
+<ellipse cx="80" cy="87" rx="21" ry="15" fill="#f36f91" stroke="#d95175" stroke-width="2"/><ellipse cx="72" cy="86" rx="3.5" ry="5" fill="#7b3447"/><ellipse cx="88" cy="86" rx="3.5" ry="5" fill="#7b3447"/>
+<path d="M62 106 Q80 126 98 106 Q95 128 80 130 Q65 128 62 106Z" fill="#762c3b"/><path d="M74 108 l5 9 5-9" fill="#fff"/>
+<ellipse cx="45" cy="126" rx="18" ry="12" fill="#f59aae"/><ellipse cx="115" cy="126" rx="18" ry="12" fill="#f59aae"/>
+</g></svg>`;
+}
+const pigHTML={normal:normalPig(),gold:goldPig(),bad:rascalPig()};
+const setup=document.getElementById("setup"), game=document.getElementById("game"), board=document.getElementById("board");
+const nameInput=document.getElementById("name"), who=document.getElementById("who"), scoreEl=document.getElementById("score"), timeEl=document.getElementById("time");
+const statusEl=document.getElementById("status"), result=document.getElementById("result"), finalEl=document.getElementById("final"), settingText=document.getElementById("settingText");
+let cells=9, spawnMs=900, speedMode="普通", score=0, active=-1, kind="normal", running=false;
+let gameTimer=null, spawnTimer=null, countTimer=null;
+
+document.querySelectorAll(".cells").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".cells").forEach(x=>x.classList.remove("selected"));
+  btn.classList.add("selected"); cells=Number(btn.dataset.cells);
+}));
+document.querySelectorAll(".speed").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".speed").forEach(x=>x.classList.remove("selected"));
+  btn.classList.add("selected"); spawnMs=Number(btn.dataset.ms); speedMode=btn.dataset.mode;
+}));
+
+function makeBoard(){
+  board.innerHTML=""; board.className="board c"+cells;
+  for(let i=0;i<cells;i++){
+    const b=document.createElement("button"); b.type="button"; b.className="hole";
+    b.addEventListener("click",()=>hit(i,b)); board.appendChild(b);
+  }
+}
+function clearPig(){[...board.children].forEach(x=>x.innerHTML="");active=-1;}
+function spawn(){
+  if(!running)return;
+  clearPig(); active=Math.floor(Math.random()*cells);
+  const r=Math.random(); kind=r<.12?"gold":r<.23?"bad":"normal";
+  board.children[active].innerHTML=pigHTML[kind];
+}
+function hit(i,b){
+  if(!running||i!==active)return;
+  score+=kind==="gold"?3:kind==="bad"?-2:1;
+  scoreEl.textContent=score; document.getElementById("scoreTop").textContent=score;
+  b.innerHTML=`<div style="font-size:clamp(26px,7vw,42px);padding-bottom:20%">💗</div>`;
+  active=-1;
+  setTimeout(()=>{if(running)spawn();},120);
+}
+function finish(){
+  running=false; clearInterval(gameTimer); clearInterval(spawnTimer); clearPig();
+  statusEl.textContent="時間到！";
+  finalEl.textContent=score;
+  settingText.textContent=`${cells} 格・${speedMode}速度`;
+  result.classList.remove("hidden");
+  saveScore();
+}
+function begin(){
+  clearInterval(gameTimer); clearInterval(spawnTimer); clearInterval(countTimer);
+  running=false; score=0; scoreEl.textContent="0"; timeEl.textContent="30"; document.getElementById("scoreTop").textContent="0"; document.getElementById("timeTop").textContent="30"; result.classList.add("hidden");
+  who.textContent=nameInput.value.trim()||"小豬"; makeBoard();
+  game.classList.remove("hidden");
+  let c=4; statusEl.textContent=`${c} 秒後開始！`;
+  countTimer=setInterval(()=>{
+    c--;
+    if(c>0) statusEl.textContent=`${c} 秒後開始！`;
+    else{
+      clearInterval(countTimer); statusEl.textContent=`GO！　${cells}格・${speedMode}`;
+      running=true; spawn(); spawnTimer=setInterval(spawn,spawnMs);
+      let t=30;
+      gameTimer=setInterval(()=>{t--;timeEl.textContent=t;document.getElementById("timeTop").textContent=t;if(t<=0)finish();},1000);
+    }
+  },700);
+}
+document.getElementById("start").addEventListener("click",begin);
+document.getElementById("again").addEventListener("click",()=>{
+  clearInterval(gameTimer);clearInterval(spawnTimer);clearInterval(countTimer);running=false;
+  result.classList.add("hidden"); statusEl.textContent="選好設定後，按「開始遊戲」";
+});
+
+document.getElementById("legend").innerHTML=
+  `<span>${normalPig().replace('class="pig-svg"','style="width:28px;height:28px"')} +1</span>`+
+  `<span>${goldPig().replace('class="pig-svg"','style="width:28px;height:28px"')} +3</span>`+
+  `<span>${rascalPig().replace('class="pig-svg"','style="width:28px;height:28px"')} −2</span>`;
+
+document.getElementById("normalIcon").innerHTML=normalPig();
+document.getElementById("goldIcon").innerHTML=goldPig();
+document.getElementById("badIcon").innerHTML=rascalPig();
+
+function safeKey(s){return (s||"小豬").trim().slice(0,10).replace(/[.#$/\[\]]/g,"_")||"小豬";}
+function saveScore(){
+  const display=who.textContent;
+  const key=safeKey(display);
+  const ref=db.ref(`${TEST_ROOT}/scores/${key}`);
+  ref.once("value").then(snap=>{
+    const old=snap.val();
+    if(!old || score>Number(old.score||0)){
+      return ref.set({name:display,score,cells,speed:speedMode,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+    }
+  });
+}
+db.ref(`${TEST_ROOT}/scores`).on("value",snap=>{
+  const rows=[];
+  snap.forEach(ch=>rows.push(ch.val()));
+  rows.sort((a,b)=>Number(b.score||0)-Number(a.score||0));
+  const host=document.getElementById("rankRows");
+  if(!rows.length){host.innerHTML=`<div class="row"><span>還沒有成績</span><strong>—</strong></div>`;return;}
+  host.innerHTML=rows.slice(0,10).map((r,i)=>{
+    const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`;
+    return `<div class="row"><span>${medal} ${escapeHtml(r.name)} <span class="tag">${r.cells}格・${escapeHtml(r.speed)}</span></span><strong>${Number(r.score||0)} 分</strong></div>`;
+  }).join("");
+});
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+</script>
+</body>
+</html>
