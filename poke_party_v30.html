@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>甜心戳戳樂 V30</title>
+<style>
+:root{
+  --bg1:#fffaf0; --bg2:#fff2f6; --panel:#fffdfc; --ink:#705f64; --muted:#9c878d;
+  --pink:#f59db0; --pink2:#ffdce5; --pink3:#fff0f4; --rose:#ec7f98;
+  --mint:#dff4ea; --mint2:#a9d9ca; --blue:#e4f2fb; --lav:#eee7fb; --lav2:#b9a9df;
+  --yellow:#fff1bf; --yellow2:#efc86c; --line:#f0dce2; --danger:#ee8797;
+  --shadow:0 12px 28px rgba(183,133,143,.15);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
+body{
+  background:
+    radial-gradient(circle at 8% 12%,rgba(255,215,227,.75) 0 70px,transparent 72px),
+    radial-gradient(circle at 92% 10%,rgba(221,244,235,.75) 0 85px,transparent 87px),
+    linear-gradient(135deg,var(--bg1),var(--bg2) 48%,#f5fbf8);
+}
+button,input,textarea,select{font:inherit}
+button{touch-action:manipulation}
+.wrap{width:min(1180px,96vw);margin:auto;padding:14px 0 36px}
+.hero{text-align:center;padding:18px 8px 12px}
+.hero h1{margin:0;color:#ed8fa3;font-size:clamp(34px,7vw,62px);letter-spacing:.08em;text-shadow:0 3px #fff}
+.hero .ribbon{display:inline-block;margin-top:8px;padding:9px 30px;background:#ffcbd7;color:white;border-radius:999px;font-weight:900;box-shadow:var(--shadow)}
+.topnav{display:flex;justify-content:center;gap:10px;margin:8px 0 18px;flex-wrap:wrap}
+.navbtn{border:0;padding:11px 22px;border-radius:999px;background:#fff;color:#9b8087;font-weight:900;box-shadow:var(--shadow)}
+.navbtn.active{background:var(--pink);color:#fff}
+.panel{display:none}.panel.active{display:block}
+.card{background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.95);border-radius:26px;box-shadow:var(--shadow);padding:18px}
+.card h2,.card h3{margin:0 0 14px;color:#e18198}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
+.field{display:grid;gap:6px;margin-bottom:12px}
+label{font-weight:900}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;background:#fff;color:#66545a;outline:none}
+input:focus,textarea:focus{border-color:#f2a5b5;box-shadow:0 0 0 3px #ffe8ee}
+textarea{min-height:72px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+.btn{border:0;border-radius:15px;padding:12px 15px;font-weight:900;color:#fff;background:var(--pink);cursor:pointer}
+.btn.mint{background:var(--mint2)} .btn.lav{background:var(--lav2)} .btn.yellow{background:var(--yellow2)}
+.btn.ghost{background:#fff;color:#ce7388;border:1px solid var(--line)} .btn.danger{background:var(--danger)}
+.btn.full{width:100%}.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:13px;color:var(--muted);line-height:1.55}
+.small{font-size:12px;color:var(--muted)}
+.login{max-width:470px;margin:0 auto}.hidden{display:none!important}
+.modebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.modebtn{flex:1;min-width:180px}
+.modebtn.on{box-shadow:inset 0 0 0 3px rgba(255,255,255,.75)}
+.prizeRow{display:grid;grid-template-columns:minmax(0,1fr) 105px 46px;gap:8px;margin:8px 0}
+.summary{padding:11px 13px;border-radius:14px;background:var(--yellow);font-weight:900;margin:10px 0}
+.summary.ok{background:var(--mint)}
+.hr{height:1px;background:var(--line);margin:14px 0}
+.infoList{display:grid;gap:9px}.infoItem{display:flex;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px dashed var(--line)}
+.badge{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:var(--lav);color:#8b77b8;font-size:12px;font-weight:900}
+.boardWrap{overflow:auto;padding-bottom:3px}
+.board{display:grid;grid-template-columns:repeat(10,minmax(54px,1fr));gap:6px;min-width:620px}
+.cell{border:0;min-height:58px;border-radius:12px;background:linear-gradient(145deg,#ffe9ee,#ffd9e3);color:#e6758b;font-weight:950;box-shadow:inset 0 0 0 1px #fff,0 3px 7px rgba(221,146,162,.12);padding:4px}
+.cell:hover{transform:translateY(-1px)}
+.cell.open{background:linear-gradient(145deg,#e7f6ef,#d7ede5);color:#6b8e84}
+.cell.open.win{background:linear-gradient(145deg,#fff6c9,#ffe8a0);color:#a77a28}
+.cell.open.lose{background:linear-gradient(145deg,#eee9f7,#e2daef);color:#88759d}
+.cell .resultIcon{width:22px;height:22px;display:block;margin:0 auto 3px;position:relative}
+.cell .pigMark{background:#f6a8b8;border-radius:48% 48% 46% 46%;box-shadow:inset 0 -2px 0 rgba(190,99,121,.13)}
+.cell .pigMark:before,.cell .pigMark:after{content:"";position:absolute;top:-3px;width:8px;height:9px;background:#f6a8b8;border-radius:7px 7px 3px 3px}
+.cell .pigMark:before{left:1px;transform:rotate(-24deg)}.cell .pigMark:after{right:1px;transform:rotate(24deg)}
+.cell .pigFace{position:absolute;left:5px;top:8px;width:12px;height:8px;background:#f7c3cd;border-radius:50%;border:1px solid rgba(182,91,112,.22)}
+.cell .pigFace:before,.cell .pigFace:after{content:"";position:absolute;top:2px;width:2px;height:3px;background:#a96676;border-radius:50%}
+.cell .pigFace:before{left:2px}.cell .pigFace:after{right:2px}
+.cell .cryPigMark{width:28px;height:28px;display:block;margin:0 auto 1px;object-fit:contain;border-radius:50%}
+.cell .starMark{width:22px;height:22px;display:block;margin:0 auto 3px;background:#efbd4d;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 94%,50% 72%,21% 94%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 1px 1px rgba(165,116,32,.2))}
+.cell.mine{outline:3px solid #f5b0c0}
+.cell .tiny{font-size:10px;font-weight:800;line-height:1.15;display:block}
+.statusbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;margin-bottom:10px}
+.statuspill{background:#fff7d8;border-radius:999px;padding:7px 11px;font-weight:900;font-size:13px}
+.recordHead,.record{display:grid;grid-template-columns:72px minmax(120px,1fr) minmax(110px,1fr) 150px;gap:6px;align-items:center}
+.recordHead{font-weight:900;color:#d8788d;padding:8px 6px;border-bottom:1px solid var(--line)}
+.record{padding:9px 6px;border-bottom:1px dashed var(--line);font-size:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions .btn{flex:1;min-width:145px}
+.playerHeader{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.prizePopup{position:fixed;inset:0;background:rgba(91,68,75,.26);display:flex;align-items:center;justify-content:center;padding:18px;z-index:99}
+.popupCard{width:min(420px,92vw);background:#fff;border-radius:28px;padding:26px;text-align:center;box-shadow:0 24px 60px rgba(97,65,75,.25)}
+.popupCard .gift{font-size:54px}
+.popupPig{width:min(220px,62vw);max-height:230px;object-fit:contain;margin:0 auto 8px;display:block;filter:drop-shadow(0 10px 14px rgba(100,70,75,.18))}
+.loseTitle{color:#8f7780!important}.loseMsg{font-size:16px;color:#9b858b;margin:4px 0 18px;font-weight:800}.popupCard h2{font-size:28px;color:#e57891;margin:8px 0}.popupCard .prizeName{font-size:24px;font-weight:950;color:#8a6a72;margin:10px 0 18px}
+.copyBox{white-space:pre-wrap;background:#fff9e8;border-radius:14px;padding:12px;font-size:13px;max-height:220px;overflow:auto;border:1px solid #f3e8bf}
+@media(max-width:780px){
+  .grid2{grid-template-columns:1fr}
+  .wrap{width:min(96vw,680px)}
+  .card{border-radius:22px;padding:14px}
+  .recordHead,.record{grid-template-columns:58px 1fr 1fr}
+  .recordHead span:last-child,.record span:last-child{display:none}
+  .board{grid-template-columns:repeat(5,minmax(56px,1fr));min-width:0}
+  .cell{min-height:64px}
+}
+</style>
+
+<!-- Firebase Realtime Database：多人同步版 -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>♡ 戳戳樂 ♡</h1>
+    <div class="ribbon">每人限抽一次・祝你好運！</div>
+  </header>
+
+  <div class="topnav">
+    <button class="navbtn active" data-page="playerPage">玩家入口</button>
+    <button class="navbtn" data-page="adminPage">主控面板</button>
+  </div>
+
+  <section id="playerPage" class="panel active">
+    <div id="playerLogin" class="card login">
+      <h2>♡ 進入幸運房間 ♡</h2>
+      <div class="field"><label>選擇活動場次</label><select id="playerRoomSelect"><option value="room1">小寶</option><option value="room2">甯唲</option></select></div>
+      <div class="field"><label>暱稱</label><input id="nick" placeholder="請輸入暱稱"></div>
+      <div class="field"><label>房間密碼</label><input id="playerRoomPass" type="password" placeholder="請輸入活動房間密碼"></div>
+      <button class="btn full" onclick="enterRoom()">進入戳戳樂</button>
+      <p class="note">同一個暱稱每場只能抽一次；正式多人版會使用 Firebase 即時鎖格。</p>
+    </div>
+
+    <div id="gameArea" class="hidden">
+      <div class="grid2">
+        <div class="card">
+          <div class="playerHeader">
+            <div>
+              <h2 id="playerTitle">♡ 甜心幸運戳戳樂 ♡</h2>
+              <div id="playerMemo" class="note">每人限抽一次</div>
+            </div>
+            <span class="badge" id="whoami">玩家</span>
+          </div>
+          <div class="statusbar">
+            <span class="statuspill">剩餘 <b id="remainCount">0</b> 格</span>
+            <span class="statuspill" id="playerStatus">請選擇一格</span>
+          </div>
+          <button class="btn white full" style="margin:10px 0 14px" onclick="backToPlayerEntry()">← 返回玩家入口</button>
+          <div class="boardWrap"><div id="board" class="board"></div></div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>♡ 活動資訊 ♡</h3>
+            <div class="infoList">
+              <div class="infoItem"><span>活動名稱</span><b id="infoName">甜心幸運戳戳樂</b></div>
+              <div class="infoItem"><span>格子數量</span><b><span id="infoCells">150</span> 格</b></div>
+              <div class="infoItem"><span>每人限抽</span><b>1 次</b></div>
+              <div class="infoItem"><span>結束時間</span><b id="infoEnd">尚未設定</b></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <h3>♡ 最新開獎紀錄 ♡</h3>
+            <div id="recentRecords"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="adminPage" class="panel">
+    <div id="adminLogin" class="card login">
+      <h2>♡ 管理員登入 ♡</h2>
+      <div class="field"><label>管理員密碼</label><input id="ownerPass" type="password" placeholder="與玩家房間密碼不同"></div>
+      <button class="btn lav full" onclick="ownerLogin()">進入主控面板</button>
+      <p class="note">主管理員與共用管理員皆可登入；只有主管理員能看到並修改管理員密碼。</p>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <div class="grid2">
+        <div class="card">
+          <h2>⚙ 遊戲設定（主控面板）</h2>
+          <div class="field" style="padding:14px;border:2px solid #ffd0df;border-radius:18px;background:#fff6f9;margin-bottom:18px">
+            <label style="font-weight:800;color:#e96f96">活動環境</label>
+            <select id="activityEnv" style="width:100%;margin-top:8px;padding:13px 14px;border:1px solid #eadde2;border-radius:14px;background:white;font-size:16px">
+              <option value="room1" selected>小寶</option>
+              <option value="room2">甯唲</option>
+            </select>
+            <div id="envStatus" class="note" style="margin-top:8px;font-weight:700;color:#9a6c7b">目前選擇：小寶。與甯唲 完全獨立。</div>
+          </div>
+          <div class="field"><label>活動名稱</label><input id="activityName" value="甜心幸運戳戳樂"></div>
+          <div class="field"><label>結束時間</label><input id="endTime" type="datetime-local"></div>
+          <div class="field"><label>玩家房間密碼</label><input id="setRoomPass" value="8888"></div>
+          <button type="button" class="btn yellow full" style="margin-top:-4px;margin-bottom:14px" onclick="updateCurrentRoomPassword()">🔑 只修改目前場次房間密碼</button>
+          <div id="roomPasswordMsg" class="note" style="margin-top:-6px;margin-bottom:14px"></div>
+          <div class="field"><label>格子數量</label><input id="cellCount" type="number" min="1" max="500" value="150"></div>
+          <div class="field"><label>備註說明</label><textarea id="memo">每人限抽一次</textarea></div>
+
+          <h3>🎁 獎品清單設定方式</h3>
+          <div class="modebar">
+            <button id="modeAButton" class="btn yellow modebtn on" onclick="setMode('A')">模式 A：品名＋數量拆分</button>
+            <button id="modeBButton" class="btn ghost modebtn" onclick="setMode('B')">模式 B：自由文字輸入</button>
+          </div>
+
+          <div id="modeABox">
+            <div id="prizeRows"></div>
+            <button class="btn yellow" onclick="addPrize()">＋ 新增獎品項目</button>
+            <div id="sumBox" class="summary">獎品總數：0 / 150 格</div>
+            <div class="note">獎品總數必須精準等於格子數，系統才允許生成活動。</div>
+          </div>
+
+          <div id="modeBBox" class="hidden">
+            <div class="field">
+              <label>自由文字獎品（每行代表 1 格）</label>
+              <textarea id="freePrizes" placeholder="例如：&#10;特獎&#10;液肥1組&#10;莓果3選1"></textarea>
+            </div>
+            <div id="freeSum" class="summary">目前 0 / 150 格</div>
+          </div>
+
+          <div class="hr"></div>
+          <button class="btn danger full" onclick="generateGame()">生成全新的同步戳戳樂</button>
+          <div class="actions">
+            <button class="btn mint" onclick="openPlayer()">🔗 開啟玩家連線頁</button>
+            <button class="btn lav" onclick="copyLink()">📋 複製戳戳樂網址</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>🏆 開獎即時紀錄</h3>
+            <div class="recordHead"><span>格位</span><span>獎品內容</span><span>得獎者</span><span>開獎時間</span></div>
+            <div id="adminRecords"></div>
+            <div class="actions">
+              <button class="btn mint" onclick="copyWinners()">📋 複製得獎列表</button>
+              <button class="btn ghost" onclick="showCopyPreview()">👀 預覽複製文字</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px">
+            <h3>📚 歷史開獎紀錄</h3>
+            <p class="note">自動保留目前場次最近 3 期。每一期可單獨查看、單獨複製。</p>
+            <div id="historyRecords"></div>
+          </div>
+
+          <div class="card" style="margin-top:16px">
+            <h3>🛠 管理工具</h3>
+            <div class="field"><label>管理者代抽：輸入得獎者暱稱</label><input id="proxyName" placeholder="例如：王小花"></div>
+            <button class="btn yellow full" onclick="proxyDraw()">管理者代抽 1 格</button>
+            <p class="note">代抽也會寫入開獎紀錄，得獎者後面標示「管理者代抽」。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="prizePopup" class="prizePopup hidden">
+  <div class="popupCard">
+    <div id="popupGift" class="gift hidden">🎁</div>
+    <img id="popupPig" class="popupPig" src="pig_gold_new.png" alt="結果小豬">
+    <h2 id="popupTitle">恭喜抽中</h2>
+    <div id="popupPrize" class="prizeName">獎品</div>
+    <div id="popupLoseMsg" class="loseMsg hidden">嘿嘿～這格被搗蛋豬佔走啦！</div>
+    <button id="popupButton" class="btn full" onclick="closePopup()">收下幸運 ♡</button>
+  </div>
+</div>
+
+<div id="copyPopup" class="prizePopup hidden">
+  <div class="popupCard" style="text-align:left">
+    <h2 style="text-align:center">得獎列表文字</h2>
+    <div id="copyPreview" class="copyBox"></div>
+    <div class="actions">
+      <button class="btn mint" onclick="copyWinners()">複製文字</button>
+      <button class="btn ghost" onclick="copyPopup.classList.add('hidden')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig={
+  apiKey:"AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",
+  authDomain:"mole-game-3073f.firebaseapp.com",
+  databaseURL:"https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"mole-game-3073f",
+  storageBucket:"mole-game-3073f.firebasestorage.app",
+  messagingSenderId:"942915688837",
+  appId:"1:942915688837:web:4e6584ad32100b2cc24cec"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const auth=firebase.auth();
+let authReadyPromise=null;
+
+function ensureFirebaseAuth(){
+  if(auth.currentUser) return Promise.resolve(auth.currentUser);
+  if(authReadyPromise) return authReadyPromise;
+  authReadyPromise=auth.signInAnonymously()
+    .then(result=>result.user)
+    .catch(err=>{
+      authReadyPromise=null;
+      throw err;
+    });
+  return authReadyPromise;
+}
+
+/* 頁面載入後立即建立匿名 Firebase 身分；管理員與玩家寫入前也會再次確認。 */
+ensureFirebaseAuth().catch(err=>console.error("Firebase 匿名登入失敗",err));
+/* 與小豬資料完全分離 */
+const ROOT="pokePartyV3/main";
+let activeEnv="room1";
+let gameRef=db.ref(ROOT+"/room1/game");
+let claimsRef=db.ref(ROOT+"/room1/claims");
+let usersRef=db.ref(ROOT+"/room1/users");
+let recordsRef=db.ref(ROOT+"/room1/records");
+let realtimeBound=false;
+const adminConfigRef=db.ref(ROOT+"/adminConfig");
+
+/* 使用 Firebase 伺服器校時，不再直接信任手機本機時間 */
+let serverTimeOffset=0;
+db.ref(".info/serverTimeOffset").on("value",snap=>{
+  serverTimeOffset=Number(snap.val())||0;
+});
+function serverNow(){
+  return Date.now()+serverTimeOffset;
+}
+
+/* 將 datetime-local 明確依本機年月日時分轉成 epoch，避免 12/24 小時顯示差異 */
+function parseLocalDateTime(value){
+  if(!value) return null;
+  const m=value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(!m) return null;
+  const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),Number(m[4]),Number(m[5]),Number(m[6]||0),0);
+  const t=d.getTime();
+  return Number.isFinite(t)?t:null;
+}
+
+function setActivityEnv(env){
+  const nextEnv=(env==="room2")?"room2":"room1";
+  if(realtimeBound){
+    gameRef.off("value",handleGameValue);
+    claimsRef.off("value",handleClaimsValue);
+    recordsRef.off("value",handleRecordsValue);
+    realtimeBound=false;
+  }
+  activeEnv=nextEnv;
+  const base=ROOT+"/"+activeEnv;
+  gameRef=db.ref(base+"/game");
+  claimsRef=db.ref(base+"/claims");
+  usersRef=db.ref(base+"/users");
+  recordsRef=db.ref(base+"/records");
+  bindRealtimeListeners();
+}
+
+const S={
+  ownerPass:"2468",
+  roomPass:"8888",
+  activityName:"甜心幸運戳戳樂",
+  endTime:"",
+  endAt:null,
+  memo:"每人限抽一次",
+  cells:150,
+  mode:"A",
+  prizes:[],
+  assignments:[],
+  opened:{},
+  usedNames:{},
+  records:[],
+  history:{},
+  periodNo:1
+};
+
+function q(id){return document.getElementById(id)}
+
+async function sha256(text){
+  const data=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest("SHA-256",data);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function ensureAdminConfig(){
+  const snap=await adminConfigRef.once("value");
+  if(snap.exists()){
+    const cfg=snap.val();
+    if(!cfg.sharedPasswordHash){
+      cfg.sharedPasswordHash=await sha256("1357");
+      await adminConfigRef.child("sharedPasswordHash").set(cfg.sharedPasswordHash);
+    }
+    return cfg;
+  }
+  /* 第一次升級到 V13：優先沿用本機 V12 已修改過的密碼，否則用初始 2468 */
+  const legacy=localStorage.getItem("pokeAdminPassword")||S.ownerPass;
+  const hash=await sha256(legacy);
+  const sharedHash=await sha256("1357");
+  const config={passwordHash:hash,sharedPasswordHash:sharedHash,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+  await adminConfigRef.set(config);
+  return config;
+}
+
+document.addEventListener("change",e=>{
+  if(e.target && e.target.id==="activityEnv"){
+    setActivityEnv(e.target.value);
+    const hint=e.target.value==="room2"
+      ?"目前選擇：甯唲。與小寶 完全獨立。"
+      :"目前選擇：小寶。與甯唲 完全獨立。";
+    const box=document.getElementById("envStatus");
+    if(box) box.textContent=hint;
+  }
+});
+document.querySelectorAll(".navbtn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".navbtn").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active"); q(btn.dataset.page).classList.add("active");
+  });
+});
+
+async function ownerLogin(){
+  const entered=q("ownerPass").value;
+  if(!entered){alert("請輸入管理員密碼");return}
+  try{
+    const cfg=await ensureAdminConfig();
+    const enteredHash=await sha256(entered);
+    const isOwner=enteredHash===cfg.passwordHash;
+    const isShared=enteredHash===cfg.sharedPasswordHash;
+    if(!isOwner && !isShared){alert("管理員密碼不正確");return}
+    window.adminRole=isOwner?"owner":"shared";
+    q("adminLogin").classList.add("hidden");
+    q("adminPanel").classList.remove("hidden");
+    const passwordCard=q("changeAdminPasswordCard");
+    if(passwordCard) passwordCard.classList.toggle("hidden",!isOwner);
+  }catch(e){
+    alert("管理員驗證連線失敗："+e.message);
+  }
+}
+function setMode(m){
+  S.mode=m;
+  q("modeABox").classList.toggle("hidden",m!=="A");
+  q("modeBBox").classList.toggle("hidden",m!=="B");
+  q("modeAButton").classList.toggle("on",m==="A");
+  q("modeBButton").classList.toggle("on",m==="B");
+  q("modeAButton").className="btn "+(m==="A"?"yellow":"ghost")+" modebtn "+(m==="A"?"on":"");
+  q("modeBButton").className="btn "+(m==="B"?"yellow":"ghost")+" modebtn "+(m==="B"?"on":"");
+  calcTotals();
+}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function addPrize(name="",qty=1){
+  const row=document.createElement("div"); row.className="prizeRow";
+  row.innerHTML=`<input class="pname" placeholder="獎品名稱" value="${esc(name)}"><input class="pqty" type="number" min="0" value="${qty}"><button class="btn danger">×</button>`;
+  row.querySelector(".btn").onclick=()=>{row.remove();calcTotals()};
+  row.querySelectorAll("input").forEach(i=>i.addEventListener("input",calcTotals));
+  q("prizeRows").appendChild(row); calcTotals();
+}
+function calcTotals(){
+  const cells=+q("cellCount").value||0;
+  let total=0; document.querySelectorAll(".pqty").forEach(x=>total+=+x.value||0);
+  q("sumBox").textContent=`獎品總數：${total} / ${cells} 格`;
+  q("sumBox").classList.toggle("ok",total===cells && cells>0);
+  const free=q("freePrizes").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).length;
+  q("freeSum").textContent=`目前 ${free} / ${cells} 格`;
+  q("freeSum").classList.toggle("ok",free===cells && cells>0);
+}
+q("cellCount").addEventListener("input",calcTotals); q("freePrizes").addEventListener("input",calcTotals);
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+async function generateGame(){
+  setActivityEnv(q("activityEnv")?.value||"room1");
+  const cells=+q("cellCount").value||0;
+  if(cells<1 || cells>500){alert("格子數量請設定 1～500");return}
+  let assignments=[];
+  if(S.mode==="A"){
+    const rows=[...document.querySelectorAll(".prizeRow")];
+    const prizes=rows.map(r=>({name:r.querySelector(".pname").value.trim(),qty:+r.querySelector(".pqty").value||0})).filter(x=>x.name&&x.qty>0);
+    const total=prizes.reduce((n,p)=>n+p.qty,0);
+    if(total!==cells){alert(`獎品總數 ${total} 必須等於格子數 ${cells}`);return}
+    assignments=prizes.flatMap(p=>Array(p.qty).fill(p.name));
+    S.prizes=prizes;
+  }else{
+    assignments=q("freePrizes").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    if(assignments.length!==cells){alert(`自由文字目前 ${assignments.length} 項，必須等於格子數 ${cells}`);return}
+  }
+  const envLabel=activeEnv==="room2"?"甯唲":"小寶";
+  if(!confirm(`確定要生成新的${envLabel}嗎？\n\n目前這一期會先存入「歷史開獎紀錄」，最多保留最近 3 期；不會影響另一個場次。`)) return;
+
+  let oldGame=null, oldRecords=[];
+  try{
+    await ensureFirebaseAuth();
+    const [oldGameSnap,oldRecordsSnap]=await Promise.all([gameRef.once("value"),recordsRef.once("value")]);
+    oldGame=oldGameSnap.val();
+    oldRecords=Object.values(oldRecordsSnap.val()||{});
+  }catch(e){
+    alert("讀取上一期資料失敗："+e.message);
+    return;
+  }
+
+  let history=(oldGame && oldGame.history && typeof oldGame.history==="object") ? {...oldGame.history} : {};
+  let oldPeriod=oldGame ? (Number(oldGame.periodNo)||1) : 0;
+
+  if(oldGame){
+    history["p"+oldPeriod]={
+      periodNo:oldPeriod,
+      activityName:oldGame.activityName||"戳戳樂",
+      createdAt:oldGame.createdAt||null,
+      endAt:oldGame.endAt||null,
+      archivedAt:firebase.database.ServerValue.TIMESTAMP,
+      records:oldRecords
+    };
+  }
+
+  const historyEntries=Object.entries(history)
+    .sort((a,b)=>(Number(b[1]?.periodNo)||0)-(Number(a[1]?.periodNo)||0))
+    .slice(0,3);
+  history=Object.fromEntries(historyEntries);
+  const newPeriod=oldGame ? oldPeriod+1 : 1;
+
+  S.cells=cells; S.roomPass=q("setRoomPass").value.trim(); S.activityName=q("activityName").value.trim()||"戳戳樂";
+  S.endTime=q("endTime").value; S.memo=q("memo").value.trim(); S.assignments=shuffle(assignments.slice());
+  S.opened={}; S.usedNames={}; S.records=[]; S.history=history; S.periodNo=newPeriod;
+  syncView();
+  const endAt=parseLocalDateTime(S.endTime);
+  S.endAt=endAt;
+  const gameData={
+    activityName:S.activityName,endTime:S.endTime,endAt:endAt,memo:S.memo,cells:S.cells,
+    roomPass:S.roomPass,assignments:S.assignments,createdAt:firebase.database.ServerValue.TIMESTAMP,
+    periodNo:newPeriod,history:history
+  };
+  try{
+    await gameRef.set(gameData);
+    await Promise.all([
+      claimsRef.remove(),
+      usersRef.remove(),
+      recordsRef.remove()
+    ]);
+    alert(`新的多人同步戳戳樂已生成！目前為第 ${newPeriod} 期；上一期已保存。`);
+  }catch(e){
+    alert("Firebase 寫入失敗："+e.message);
+  }
+}
+function backToPlayerEntry(){
+  q("playerLogin").classList.remove("hidden");
+  q("gameArea").classList.add("hidden");
+  q("nick").value="";
+  q("playerRoomPass").value="";
+  q("playerStatus").textContent="請選擇一格";
+}
+
+async function enterRoom(){
+  const selectedRoom=q("playerRoomSelect")?.value||"room1";
+  setActivityEnv(selectedRoom);
+  try{
+    const roomSnap=await gameRef.once("value");
+    if(!roomSnap.exists()){
+      alert(selectedRoom==="room2"?"甯唲 尚未建立活動":"小寶 尚未建立活動");
+      return;
+    }
+    handleGameValue(roomSnap);
+  }catch(e){
+    alert("活動資料讀取失敗："+e.message);
+    return;
+  }
+
+  
+  try{
+    await ensureFirebaseAuth();
+  }catch(e){
+    alert("Firebase 驗證失敗："+e.message);
+    return;
+  }
+  const name=q("nick").value.trim(); const pass=q("playerRoomPass").value;
+  if(!name){alert("請輸入暱稱");return}
+  if(pass!==S.roomPass){alert("房間密碼不正確");return}
+  const key=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
+  try{
+    const snap=await usersRef.child(key).once("value");
+    if(snap.exists()){alert("這個暱稱已經抽過囉！");return}
+  }catch(e){alert("連線檢查失敗："+e.message);return}
+  q("playerLogin").classList.add("hidden"); q("gameArea").classList.remove("hidden");
+  q("gameArea").dataset.name=name; q("whoami").textContent="玩家："+name; syncView();
+}
+function norm(s){return s.trim().toLocaleLowerCase("zh-TW")}
+function isNoPrize(prize){
+  const s=String(prize||"").trim().toLowerCase();
+  return ["未中獎","沒中獎","銘謝惠顧","搗蛋豬","謝謝參加","再接再厲"].some(x=>s.includes(x));
+}
+function showResultPopup(prize){
+  const lose=isNoPrize(prize);
+  q("popupPig").src=lose?"pig_bad_new.png":"pig_gold_new.png";
+  q("popupPig").alt=lose?"搗蛋豬":"黃金豬";
+  q("popupPig").classList.remove("hidden");
+  q("popupGift").classList.add("hidden");
+  q("popupLoseMsg").classList.toggle("hidden",!lose);
+  q("popupTitle").textContent=lose?"♡ 搗蛋豬出現啦 ♡":"♡ 黃金豬報喜 ♡";
+  q("popupTitle").classList.toggle("loseTitle",lose);
+  q("popupPrize").textContent=lose?"這次沒有抽中獎品":prize;
+  q("popupButton").textContent=lose?"好吧，被你搗蛋到了！":"收下幸運 ♡";
+  q("prizePopup").classList.remove("hidden");
+}
+function getEndTimestamp(){
+  if(S.endAt && Number.isFinite(Number(S.endAt))) return Number(S.endAt);
+  return parseLocalDateTime(S.endTime);
+}
+function activityEnded(){
+  const t=getEndTimestamp();
+  return t!==null && serverNow()>=t;
+}
+function formatEndTime(){
+  const t=getEndTimestamp();
+  if(t===null) return "尚未設定";
+  return new Date(t).toLocaleString("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+}
+function endedMessage(){
+  return getEndTimestamp()!==null ? `活動已於 ${formatEndTime()} 結束，已停止抽取。` : "活動已結束，已停止抽取。";
+}
+
+async function pickCell(i){
+  const name=q("gameArea").dataset.name||"";
+  if(!name){alert("請先登入房間");return}
+  if(activityEnded()){
+    alert(endedMessage());
+    q("playerStatus").textContent="活動已結束";
+    syncView();
+    return;
+  }
+  const userKey=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
+  try{
+    const used=await usersRef.child(userKey).once("value");
+    if(used.exists()){alert("每位玩家只能抽一次喔！");return}
+    if(activityEnded()){
+      alert(endedMessage());
+      q("playerStatus").textContent="活動已結束";
+      syncView();
+      return;
+    }
+    const claim=claimsRef.child(String(i));
+    const result=await claim.transaction(current=>{
+      if(current!==null) return;
+      return {name:name,at:firebase.database.ServerValue.TIMESTAMP};
+    });
+    if(!result.committed){alert("手慢一步，這格剛剛被別人抽走了！請選其他格。");return}
+    /* 先鎖格，再用 transaction 鎖暱稱；若暱稱已被其他裝置使用則釋放格子 */
+    const userResult=await usersRef.child(userKey).transaction(current=>{
+      if(current!==null) return;
+      return {name:name,cell:i,at:firebase.database.ServerValue.TIMESTAMP};
+    });
+    if(!userResult.committed){
+      await claim.remove();
+      alert("這個暱稱已經抽過囉！");
+      return;
+    }
+    const prize=S.assignments[i] ?? "幸運小禮物";
+    const rec={cell:i+1,prize:prize,name:name,isProxy:false,at:firebase.database.ServerValue.TIMESTAMP};
+    await recordsRef.push(rec);
+    showResultPopup(prize);
+    q("playerStatus").textContent=isNoPrize(prize)?"這次遇到搗蛋豬！":`已抽中：${prize}`;
+  }catch(e){
+    const msg=String(e?.message||e||"").toLowerCase();
+    const code=String(e?.code||"").toLowerCase();
+    if(activityEnded() || msg.includes("permission_denied") || code.includes("permission_denied")){
+      alert(endedMessage());
+      q("playerStatus").textContent="活動已結束";
+      syncView();
+    }else{
+      alert("抽獎連線失敗："+e.message);
+    }
+  }
+}
+async function proxyDraw(){
+  if(activityEnded()){alert(endedMessage());return}
+  const name=q("proxyName").value.trim(); if(!name){alert("請輸入代抽得獎者暱稱");return}
+  const userKey=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
+  try{
+    const used=await usersRef.child(userKey).once("value");
+    if(used.exists()){alert("這個暱稱已經抽過了");return}
+    const claims=(await claimsRef.once("value")).val()||{};
+    if(activityEnded()){alert(endedMessage());return}
+    const avail=[]; for(let i=0;i<S.cells;i++) if(!claims[i]) avail.push(i);
+    if(!avail.length){alert("已經沒有可抽的格子");return}
+    shuffle(avail);
+    let chosen=null;
+    for(const i of avail){
+      const r=await claimsRef.child(String(i)).transaction(cur=>{
+        if(cur!==null) return;
+        return {name:name,proxy:true,at:firebase.database.ServerValue.TIMESTAMP};
+      });
+      if(r.committed){chosen=i;break}
+    }
+    if(chosen===null){alert("剛好所有格子都被其他玩家搶走了");return}
+    const ur=await usersRef.child(userKey).transaction(cur=>{
+      if(cur!==null) return;
+      return {name:name,cell:chosen,proxy:true,at:firebase.database.ServerValue.TIMESTAMP};
+    });
+    if(!ur.committed){await claimsRef.child(String(chosen)).remove();alert("這個暱稱已經抽過了");return}
+    const prize=S.assignments[chosen]??"幸運小禮物";
+    await recordsRef.push({cell:chosen+1,prize,name,isProxy:true,at:firebase.database.ServerValue.TIMESTAMP});
+    q("proxyName").value=""; alert(`管理者代抽完成：第 ${chosen+1} 格`);
+  }catch(e){alert("代抽失敗："+e.message)}
+}
+function closePopup(){q("prizePopup").classList.add("hidden")}
+function syncView(){
+  q("playerTitle").textContent="♡ "+S.activityName+" ♡"; q("playerMemo").textContent=S.memo||"每人限抽一次";
+  q("infoName").textContent=S.activityName; q("infoCells").textContent=S.cells;
+  q("infoEnd").textContent=activityEnded() ? (formatEndTime()+"（已結束）") : formatEndTime();
+  q("remainCount").textContent=S.cells-Object.keys(S.opened).length;
+  if(activityEnded() && q("playerStatus")) q("playerStatus").textContent="活動已結束";
+  renderBoard(); renderRecords();
+}
+function renderBoard(){
+  const b=q("board"); b.innerHTML="";
+  const ended=activityEnded();
+  for(let i=0;i<S.cells;i++){
+    const btn=document.createElement("button");btn.className="cell";
+    if(S.opened[i]){
+      const lose=isNoPrize(S.opened[i].prize);
+      btn.classList.add("open",lose?"lose":"win");
+      btn.innerHTML=`${lose?'<img class="cryPigMark" src="pig_cry.png" alt="哭哭小豬">':'<span class="starMark"></span>'}${i+1}<span class="tiny">${lose?"搗蛋豬":esc(S.opened[i].prize)}<br>${esc(S.opened[i].name)}</span>`;
+    }else{
+      btn.textContent=i+1;
+      if(ended){
+        btn.disabled=true;
+        btn.title="活動已結束";
+        btn.style.opacity=".55";
+        btn.style.cursor="not-allowed";
+      }else{
+        btn.onclick=()=>pickCell(i);
+      }
+    }
+    b.appendChild(btn);
+  }
+}
+function renderRecords(){
+  const rev=S.records.slice().reverse();
+  q("recentRecords").innerHTML=rev.slice(0,8).map(r=>`<div class="record"><span>第${r.cell}格</span><span>${esc(r.prize)}</span><span>${esc(r.name)}</span><span>${r.time}</span></div>`).join("")||'<p class="note">目前還沒有開獎紀錄。</p>';
+  q("adminRecords").innerHTML=rev.map(r=>`<div class="record"><span>第${r.cell}格</span><span>${esc(r.prize)}</span><span>${esc(r.name)}${r.isProxy?' <span class="badge">管理者代抽</span>':''}</span><span>${r.time}</span></div>`).join("")||'<p class="note">目前還沒有開獎紀錄。</p>';
+}
+function historyList(){
+  return Object.values(S.history||{})
+    .filter(Boolean)
+    .sort((a,b)=>(Number(b.periodNo)||0)-(Number(a.periodNo)||0));
+}
+function historyText(h){
+  const records=Array.isArray(h.records)?h.records:Object.values(h.records||{});
+  const rows=records
+    .sort((a,b)=>(Number(a.at)||0)-(Number(b.at)||0))
+    .map(r=>`第${r.cell}格｜${r.prize}｜${r.name}${r.isProxy?"（管理者代抽）":""}｜${fmtTime(r.at)}`)
+    .join("\n");
+  const started=h.createdAt?fmtTime(h.createdAt):"未記錄";
+  const ended=h.endAt?fmtTime(h.endAt):"未設定";
+  return `🎁 ${h.activityName||"戳戳樂"}｜第${h.periodNo||"?"}期\n活動開始：${started}\n活動結束：${ended}\n\n${rows||"本期沒有開獎紀錄"}`;
+}
+function copyHistoryPeriod(periodNo){
+  const h=historyList().find(x=>Number(x.periodNo)===Number(periodNo));
+  if(h) copyText(historyText(h));
+}
+function renderHistory(){
+  const box=q("historyRecords");
+  if(!box) return;
+  const list=historyList();
+  if(!list.length){
+    box.innerHTML='<p class="note">目前還沒有歷史期別。產生下一場時，這一場會自動保存到這裡。</p>';
+    return;
+  }
+  box.innerHTML=list.map(h=>{
+    const records=Array.isArray(h.records)?h.records:Object.values(h.records||{});
+    const date=h.createdAt?fmtTime(h.createdAt):"日期未記錄";
+    const rows=records
+      .slice()
+      .sort((a,b)=>(Number(a.at)||0)-(Number(b.at)||0))
+      .map(r=>`<div class="record"><span>第${r.cell}格</span><span>${esc(r.prize)}</span><span>${esc(r.name)}${r.isProxy?' <span class="badge">管理者代抽</span>':''}</span><span>${fmtTime(r.at)}</span></div>`)
+      .join("")||'<p class="note">本期沒有開獎紀錄。</p>';
+    return `<details style="margin:10px 0;border:1px solid #f0dfe5;border-radius:14px;padding:10px;background:#fffafb">
+      <summary style="cursor:pointer;font-weight:800">第 ${h.periodNo} 期｜${esc(h.activityName||"戳戳樂")}｜${esc(date)}</summary>
+      <div class="recordHead" style="margin-top:10px"><span>格位</span><span>獎品內容</span><span>得獎者</span><span>開獎時間</span></div>
+      ${rows}
+      <button class="btn mint full" style="margin-top:10px" onclick="copyHistoryPeriod(${Number(h.periodNo)||0})">📋 複製第 ${h.periodNo} 期紀錄</button>
+    </details>`;
+  }).join("");
+}
+
+function winnerText(){
+  const rows=S.records.map(r=>`第${r.cell}格｜${r.prize}｜${r.name}${r.isProxy?"（管理者代抽）":""}`).join("\n");
+  return `🎁 ${S.activityName} 得獎列表\n${rows||"目前尚無得獎紀錄"}`;
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);alert("已複製，可直接貼到 LINE")}
+  catch(e){prompt("請長按複製以下文字：",t)}
+}
+function copyWinners(){copyText(winnerText())}
+function showCopyPreview(){q("copyPreview").textContent=winnerText();q("copyPopup").classList.remove("hidden")}
+function copyLink(){copyText(location.href.split("#")[0]+"#player")}
+function openPlayer(){
+  document.querySelector('[data-page="playerPage"]').click();
+  q("playerLogin").classList.remove("hidden"); q("gameArea").classList.add("hidden");
+}
+
+
+async function updateCurrentRoomPassword(){
+  const pass=q("setRoomPass").value.trim();
+  const msg=q("roomPasswordMsg");
+  if(pass.length<4){ if(msg) msg.textContent="房間密碼至少需要 4 碼。"; return; }
+  setActivityEnv(q("activityEnv")?.value||"room1");
+  try{
+    await ensureFirebaseAuth();
+    const snap=await gameRef.once("value");
+    if(!snap.exists()){ if(msg) msg.textContent="目前場次尚未建立活動。"; return; }
+    await gameRef.child("roomPass").set(pass);
+    S.roomPass=pass;
+    if(msg) msg.textContent=(activeEnv==="room2"?"甯唲":"小寶")+" 房間密碼已更新；格子與開獎紀錄都不會重置。";
+  }catch(e){
+    if(msg) msg.textContent="修改失敗："+e.message;
+  }
+}
+
+function fmtTime(ts){
+  if(!ts) return "";
+  return new Date(ts).toLocaleString("zh-TW",{hour12:false});
+}
+function loadAdminFormFromGame(g){
+  if(!q("activityName")) return;
+  if(!g){
+    q("activityName").value="甜心幸運戳戳樂";
+    q("endTime").value="";
+    q("setRoomPass").value="8888";
+    q("cellCount").value=150;
+    q("memo").value="每人限抽一次";
+    q("prizeRows").innerHTML="";
+    addPrize("搗蛋豬（未中獎）",150);
+    setMode("A");
+    calcTotals();
+    return;
+  }
+
+  q("activityName").value=g.activityName||"戳戳樂";
+  q("endTime").value=g.endTime||"";
+  q("setRoomPass").value=g.roomPass||"";
+  q("cellCount").value=Number(g.cells)||150;
+  q("memo").value=g.memo||"每人限抽一次";
+
+  const assignments=Array.isArray(g.assignments)?g.assignments:[];
+  const counts=new Map();
+  assignments.forEach(name=>{
+    const key=String(name||"獎品");
+    counts.set(key,(counts.get(key)||0)+1);
+  });
+
+  q("prizeRows").innerHTML="";
+  if(counts.size){
+    counts.forEach((qty,name)=>addPrize(name,qty));
+  }else{
+    addPrize("搗蛋豬（未中獎）",Number(g.cells)||150);
+  }
+  setMode("A");
+  calcTotals();
+}
+
+function handleGameValue(snap){
+  const g=snap.val();
+  if(!g){
+    S.activityName="甜心幸運戳戳樂";
+    S.endTime="";
+    S.endAt=null;
+    S.memo="每人限抽一次";
+    S.cells=150;
+    S.roomPass="8888";
+    S.assignments=[];
+    S.opened={};
+    S.records=[];
+    S.history={};
+    S.periodNo=1;
+    loadAdminFormFromGame(null);
+    syncView();
+    renderRecords();
+    renderHistory();
+    return;
+  }
+  S.activityName=g.activityName||"戳戳樂"; S.endTime=g.endTime||""; S.endAt=g.endAt||null; S.memo=g.memo||"每人限抽一次";
+  S.cells=Number(g.cells)||150; S.roomPass=g.roomPass||""; S.assignments=g.assignments||[];
+  S.history=g.history||{}; S.periodNo=Number(g.periodNo)||1;
+  loadAdminFormFromGame(g);
+  syncView();
+  renderHistory();
+}
+function handleClaimsValue(snap){
+  const claims=snap.val()||{}; S.opened={};
+  Object.keys(claims).forEach(k=>{S.opened[k]={name:claims[k].name||"",prize:S.assignments[Number(k)]||"獎品",time:""}});
+  syncView();
+}
+function handleRecordsValue(snap){
+  const raw=snap.val()||{};
+  S.records=Object.values(raw).map(r=>({
+    cell:r.cell,prize:r.prize,name:r.name,isProxy:!!r.isProxy,time:fmtTime(r.at)
+  })).sort((a,b)=>a.time.localeCompare(b.time));
+  renderRecords();
+}
+function bindRealtimeListeners(){
+  if(realtimeBound) return;
+  gameRef.on("value",handleGameValue);
+  claimsRef.on("value",handleClaimsValue);
+  recordsRef.on("value",handleRecordsValue);
+  realtimeBound=true;
+}
+bindRealtimeListeners();
+
+setInterval(()=>{
+  const ended=activityEnded();
+  if(window.__pokeEndedState!==ended){
+    window.__pokeEndedState=ended;
+    syncView();
+  }
+},1000);
+
+addPrize("特獎",20); addPrize("液肥1組",20); addPrize("莓果3選1",20); addPrize("阿石",20); addPrize("小禮物",20); addPrize("搗蛋豬（未中獎）",50);
+S.assignments=shuffle([
+  ...Array(20).fill("特獎"),...Array(20).fill("液肥1組"),...Array(20).fill("莓果3選1"),
+  ...Array(20).fill("阿石"),...Array(20).fill("小禮物"),...Array(50).fill("搗蛋豬（未中獎）")
+]);
+calcTotals(); syncView();
+
+async function changeAdminPassword(){
+  if(window.adminRole!=="owner"){alert("共用管理員無權限修改主管理員密碼。");return}
+  const oldP=(document.getElementById("oldAdminPassword")?.value||"").trim();
+  const newP=(document.getElementById("newAdminPassword")?.value||"").trim();
+  const newP2=(document.getElementById("newAdminPassword2")?.value||"").trim();
+  const msg=document.getElementById("adminPasswordMsg");
+  if(!oldP){ if(msg) msg.textContent="請輸入目前密碼。"; return; }
+  if(newP.length<4){ if(msg) msg.textContent="新密碼至少需要 4 碼。"; return; }
+  if(newP!==newP2){ if(msg) msg.textContent="兩次輸入的新密碼不同。"; return; }
+  try{
+    await ensureFirebaseAuth();
+    const cfg=await ensureAdminConfig();
+    const oldHash=await sha256(oldP);
+    if(oldHash!==cfg.passwordHash){ if(msg) msg.textContent="目前密碼不正確。"; return; }
+    const newHash=await sha256(newP);
+    await adminConfigRef.set({
+      passwordHash:newHash,
+      updatedAt:firebase.database.ServerValue.TIMESTAMP
+    });
+    localStorage.removeItem("pokeAdminPassword");
+    if(msg) msg.textContent="管理員密碼已更新，其他裝置也會立即使用新密碼。";
+    ["oldAdminPassword","newAdminPassword","newAdminPassword2"].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value="";
+    });
+  }catch(e){
+    if(msg) msg.textContent="更新失敗："+e.message;
+  }
+}
+
+async function changeSharedAdminPassword(){
+  if(window.adminRole!=="owner"){alert("只有主管理員可以修改共用管理員密碼。");return}
+  const p=(q("newSharedAdminPassword")?.value||"").trim();
+  const msg=q("sharedAdminPasswordMsg");
+  if(p.length<4){if(msg) msg.textContent="共用管理員密碼至少需要 4 碼。";return}
+  try{
+    const h=await sha256(p);
+    await adminConfigRef.child("sharedPasswordHash").set(h);
+    if(msg) msg.textContent="共用管理員密碼已更新。";
+    q("newSharedAdminPassword").value="";
+  }catch(e){
+    if(msg) msg.textContent="更新失敗："+e.message;
+  }
+}
+
+auth.onAuthStateChanged(user=>{
+  const el=document.getElementById("firebaseAuthStatus");
+  if(el) el.textContent=user ? "Firebase 連線驗證：已就緒" : "Firebase 連線驗證：連線中";
+});
+
+</script>
+
+<section class="card" id="changeAdminPasswordCard" style="margin-top:18px">
+  <h2>🔐 管理員密碼</h2>
+  <p class="muted">登入主控面板後可隨時修改；新密碼會同步到所有裝置。</p>
+  <label>目前密碼</label>
+  <input id="oldAdminPassword" type="password" autocomplete="current-password" placeholder="輸入目前管理員密碼">
+  <label>新密碼</label>
+  <input id="newAdminPassword" type="password" autocomplete="new-password" placeholder="至少 4 碼">
+  <label>再次輸入新密碼</label>
+  <input id="newAdminPassword2" type="password" autocomplete="new-password" placeholder="再次輸入新密碼">
+  <button type="button" onclick="changeAdminPassword()" style="width:100%;margin-top:14px;padding:16px 18px;border:0;border-radius:18px;background:#ffcf58;color:#76575f;font-size:18px;font-weight:800">更新管理員密碼</button>
+  <hr style="border:0;border-top:1px solid #f0dfe5;margin:22px 0">
+  <h3>👥 共用管理員密碼</h3>
+  <p class="muted">給共用者登入後台使用；共用者看不到本區，也不能修改主管理員密碼。</p>
+  <label>新的共用管理員密碼</label>
+  <input id="newSharedAdminPassword" type="password" placeholder="至少 4 碼">
+  <button type="button" onclick="changeSharedAdminPassword()" style="width:100%;margin-top:14px;padding:16px 18px;border:0;border-radius:18px;background:#9bdccc;color:#76575f;font-size:18px;font-weight:800">更新共用管理員密碼</button>
+  <p id="sharedAdminPasswordMsg" class="muted"></p>
+  <p id="adminPasswordMsg" class="muted"></p>
+</section>
+<div class="card" style="margin-top:16px">
+  <h3>🛡️ 多人同步安全狀態</h3>
+  <div class="infoList">
+    <div class="infoItem"><span>搶格</span><b>Firebase Transaction 鎖定</b></div>
+    <div class="infoItem"><span>同暱稱</span><b>Transaction 防重複</b></div>
+    <div class="infoItem"><span>管理員密碼</span><b>跨裝置雜湊同步</b></div>
+  </div>
+  <p class="note">此版已避免明碼同步管理密碼；資料庫規則層的最終鎖定會在正式上線前再完成。</p>
+</div>
+
+</body>
+</html>
