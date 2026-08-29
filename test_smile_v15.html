@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小豬打打樂・V10測試版</title>
+<style>
+:root{
+  --cream:#fff8df;--pink:#ff557d;--pink2:#ffdce5;--green:#c9f26a;
+  --brown:#8b4c21;--text:#63301f;--panel:#fff9e7;--blue:#e7f5ff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:var(--text);
+background:linear-gradient(180deg,#fff6f8,#f7f8dc);min-height:100vh}
+.wrap{width:min(1180px,96vw);margin:auto;padding:12px 0 28px}
+.hero{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;background:#fff7fa;
+border:2px solid #fff;border-radius:24px;padding:10px 18px;box-shadow:0 4px 14px #8c68441c}
+.hero h1{margin:0;font-size:clamp(27px,4vw,45px);color:#7a371c;text-shadow:0 2px #fff}
+.hero p{display:none}
+.topstat{min-width:170px;padding:8px 20px;border:2px solid #ffd25c;border-radius:18px;background:#fffbea;text-align:center}
+.topstat.time{border-color:#ffb7c7;background:#fff4f7}.topstat small{font-weight:800}.topstat strong{display:block;font-size:30px}
+.layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,1.05fr);gap:12px;margin-top:12px}
+.left,.side{min-width:0}.card{background:var(--panel);border:2px solid #f1dca3;border-radius:22px;padding:12px;margin-bottom:12px}
+.gamecard{background:#fff;border-color:#d9e9bc}
+.setup-inline .name{width:100%;border:2px solid #ffd2dc;border-radius:14px;padding:10px;font-size:17px;margin-bottom:9px}
+.label{font-weight:900;margin:7px 0 5px}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.choice{border:0;background:var(--blue);border-radius:18px;min-height:42px;font-weight:900;color:#3675a0;font-size:14px}
+.choice b{display:inline;font-size:16px;margin-right:3px}.choice.selected{background:var(--pink);color:#fff}
+.start,.again{width:100%;border:0;border-radius:20px;background:var(--pink);color:white;font-size:20px;font-weight:900;padding:13px;margin-top:10px}
+.status{text-align:center;font-weight:900;background:#fff5c9;border-radius:12px;padding:7px;margin-bottom:8px}
+.stats{display:none}
+.board{
+display:grid;gap:14px;position:relative;overflow:hidden;
+background:
+radial-gradient(circle at 8% 10%,#fff 0 4px,#ffd94e 5px 8px,transparent 9px),
+radial-gradient(circle at 18% 86%,#fff 0 4px,#ff9db7 5px 8px,transparent 9px),
+radial-gradient(circle at 32% 7%,#fff 0 4px,#ffd94e 5px 8px,transparent 9px),
+radial-gradient(circle at 47% 91%,#fff 0 4px,#ff9db7 5px 8px,transparent 9px),
+radial-gradient(circle at 66% 9%,#fff 0 4px,#ffd94e 5px 8px,transparent 9px),
+radial-gradient(circle at 84% 88%,#fff 0 4px,#ff9db7 5px 8px,transparent 9px),
+radial-gradient(circle at 94% 14%,#fff 0 4px,#ffd94e 5px 8px,transparent 9px),
+repeating-linear-gradient(76deg,transparent 0 17px,rgba(45,133,24,.16) 18px 20px,transparent 21px 35px),
+repeating-linear-gradient(104deg,transparent 0 21px,rgba(255,255,255,.14) 22px 24px,transparent 25px 41px),
+linear-gradient(180deg,#b9eb57 0%,#83d63a 50%,#65bd2c 100%);
+border:3px solid #d9eab8;border-radius:28px;padding:18px;min-height:560px;align-content:center;
+box-shadow:inset 0 10px 28px rgba(65,121,31,.16),0 3px 10px rgba(96,120,54,.12)
+}
+.board::before{
+content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.8;
+background:
+radial-gradient(ellipse at 5% 36%,#48a927 0 10px,transparent 11px),
+radial-gradient(ellipse at 14% 65%,#57b832 0 8px,transparent 9px),
+radial-gradient(ellipse at 25% 4%,#429f23 0 10px,transparent 11px),
+radial-gradient(ellipse at 48% 96%,#419e22 0 11px,transparent 12px),
+radial-gradient(ellipse at 74% 5%,#4aa629 0 10px,transparent 11px),
+radial-gradient(ellipse at 88% 63%,#55b52f 0 8px,transparent 9px),
+radial-gradient(ellipse at 97% 37%,#419e22 0 10px,transparent 11px)
+}
+.board::after{
+content:"🌼  🌿  🌸  ☘️  🌼  🌱  🌸  🌿  🌼";position:absolute;left:1%;right:1%;bottom:.4%;
+font-size:clamp(14px,1.7vw,20px);word-spacing:.7vw;opacity:.88;pointer-events:none;z-index:0;white-space:nowrap;text-align:center
+}
+.board.c6,.board.c9{grid-template-columns:repeat(3,1fr)}.board.c12{grid-template-columns:repeat(4,1fr)}
+.hole{
+aspect-ratio:1.55;border:0;border-radius:50%;position:relative;z-index:1;
+background:radial-gradient(ellipse at 50% 47%,#120604 0 47%,#321307 50%,#70401f 55%,#a96531 60%,#d28c4c 65%,#edb86f 69%,#945023 73%);
+box-shadow:0 8px 7px rgba(60,40,18,.28),inset 0 6px 5px rgba(255,225,176,.25),inset 0 -7px 8px rgba(73,29,10,.30);
+display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;cursor:pointer
+}
+.pig-svg{width:82%;height:100%;display:block;pointer-events:none}
+.hole::after{display:none}
+.pig-img{
+width:112%;height:112%;object-fit:cover;object-position:center 47%;display:block;pointer-events:none;
+transform:translateY(10%) scale(1.03);clip-path:ellipse(43% 47% at 50% 48%);
+filter:saturate(1.04) drop-shadow(0 3px 3px rgba(69,32,20,.16));position:relative;z-index:3
+}
+.legend{display:none}.result{text-align:center;background:#fff0f5;border:2px solid #ffc0d2;border-radius:16px;padding:10px;margin-top:8px}
+.result strong{font-size:30px;color:#e84975}.hidden{display:none!important}
+.side h3{margin:0 0 8px;font-size:20px}.legend-side .role{display:flex;align-items:center;justify-content:space-between;background:white;border-radius:13px;padding:6px 10px;margin:6px 0;font-weight:900}
+.legend-side svg,.legend-side .pig-img{width:44px;height:44px;vertical-align:middle;border-radius:50%;object-fit:cover;transform:none;filter:none}.role-name{display:flex;align-items:center;gap:7px}.pts{padding:4px 12px;border-radius:14px;color:#fff;background:var(--pink)}
+.role:nth-child(2) .pts{background:#ff9f18}.role:nth-child(3) .pts{background:#7547df}
+.row{display:flex;justify-content:space-between;gap:8px;padding:8px 2px;border-bottom:1px solid #eadfc5}.row:last-child{border:0}
+.tag{font-size:10px;background:#f0ede5;border-radius:8px;padding:2px 5px}.note{font-size:11px;text-align:center;color:#8a7468;margin-top:7px}
+.mobile-title{display:none}
+@media(max-width:760px){
+ .hero{grid-template-columns:1fr 1fr}.hero h1{grid-column:1/-1;text-align:center}.topstat{min-width:0}
+ .layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr;gap:0}
+ .board{min-height:0;padding:11px;gap:8px}.hole{aspect-ratio:1.2}.pig-svg{width:82%}.pig-img{width:114%;height:114%;transform:translateY(10%) scale(1.03)}
+}
+
+/* V13.1：時鐘豬專用尺寸，避免原始大圖撐開角色說明或洞口 */
+.role-left img.clock-role-img{
+  width:64px !important;
+  height:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  max-height:64px !important;
+  object-fit:contain !important;
+  display:block !important;
+}
+.hole img.clock-pig-img{
+  position:absolute !important;
+  left:50% !important;
+  bottom:4% !important;
+  width:92% !important;
+  height:92% !important;
+  max-width:92% !important;
+  max-height:92% !important;
+  object-fit:contain !important;
+  transform:translateX(-50%) !important;
+  display:block !important;
+}
+
+
+/* V15：角色說明統一橫排；時鐘豬保留稍大的稀有角色辨識度 */
+.legend-side .role{
+  min-height:62px;
+}
+.legend-side .role-name{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.legend-side .role-name .pig-img,
+.legend-side .role-name svg{
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  object-fit:contain !important;
+}
+.legend-side .role-name .clock-role-img{
+  width:52px !important;
+  height:52px !important;
+  min-width:52px !important;
+  max-width:52px !important;
+  max-height:52px !important;
+  object-fit:contain !important;
+  display:block !important;
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>🐷 小豬打打樂 🌱⭐</h1>
+    <div class="topstat"><small>🏆 分數</small><strong id="scoreTop">0</strong></div>
+    <div class="topstat time"><small>⏱️ 時間</small><strong id="timeTop">30</strong></div>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <section id="game" class="card gamecard">
+        <div class="stats">
+          <strong id="who">小豬</strong><strong id="score">0</strong><strong id="time">30</strong>
+        </div>
+        <div id="status" class="status">選好設定後，按「開始遊戲」</div>
+        <div id="board" class="board c9"></div>
+        <div id="legend" class="legend"></div>
+        <div id="result" class="result hidden">
+          <div>🎉 挑戰完成！</div>
+          <strong><span id="final">0</span> 分</strong>
+          <div id="settingText"></div>
+          <button id="again" class="again" type="button">再玩一次</button>
+        </div>
+      </section>
+      <button id="start" class="start" type="button">▶ 開始遊戲</button>
+    </main>
+
+    <aside class="side">
+      <section id="setup" class="card setup-inline">
+        <h3>⚙️ 遊戲設定</h3>
+        <input id="name" class="name" maxlength="10" placeholder="輸入小朋友的名字">
+        <div class="label">格子數</div>
+        <div class="choices">
+          <button class="choice cells" data-cells="6" type="button"><b>🐣</b>6格</button>
+          <button class="choice cells selected" data-cells="9" type="button"><b>🐾</b>9格</button>
+          <button class="choice cells" data-cells="12" type="button"><b>⭐</b>12格</button>
+        </div>
+        <div class="label">速度</div>
+        <div class="choices">
+          <button class="choice speed" data-ms="1600" data-mode="慢" type="button"><b>🐌</b>慢</button>
+          <button class="choice speed selected" data-ms="1100" data-mode="普通" type="button"><b>🐾</b>普通</button>
+          <button class="choice speed" data-ms="700" data-mode="快" type="button"><b>⚡</b>快</button>
+        </div>
+      </section>
+
+      <section class="card legend-side">
+        <h3>⭐ 角色說明</h3>
+        <div class="role"><span class="role-name"><span id="normalIcon"></span>普通豬</span><span class="pts">+1分</span></div>
+        <div class="role"><span class="role-name"><span id="goldIcon"></span>黃金豬</span><span class="pts">+3分</span></div>
+      <div class="role"><span class="role-name"><img class="clock-role-img" src="./pig_clock_new.png?v=15" alt="時鐘豬">時鐘豬</span><span class="pts" style="background:#20b8c9">+3秒</span></div>
+        <div class="role"><span class="role-name"><span id="badIcon"></span>搗蛋豬</span><span class="pts">−2分</span></div>
+      </section>
+
+      <section class="card rank">
+        <h3>🏆 小豬高手榜（V15 四豬新版測試）</h3>
+        <div id="rankRows"><div class="row"><span>還沒有成績</span><strong>—</strong></div></div>
+        <div class="note">只保留每位玩家的最高分。</div>
+      </section>
+    </aside>
+  </div>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",
+  authDomain: "mole-game-3073f.firebaseapp.com",
+  databaseURL: "https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mole-game-3073f",
+  storageBucket: "mole-game-3073f.firebasestorage.app",
+  messagingSenderId: "942915688837",
+  appId: "1:942915688837:web:4e6584ad32100b2cc24cec"
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const TEST_ROOT = "pig_test_v15";
+
+function normalPig(){return `<img class="pig-img" src="./pig_normal_new.png?v=15" alt="普通豬">`;}
+function goldPig(){return `<img class="pig-img" src="./pig_gold_new.png?v=15" alt="黃金豬">`;}
+function rascalPig(){return `<img class="pig-img" src="./pig_bad_new.png?v=15" alt="搗蛋豬">`;}
+function clockPig(){return `<img class="clock-pig-img" src="./pig_clock_new.png?v=15" alt="時鐘豬">`;}
+const pigHTML={normal:normalPig(),gold:goldPig(),bad:rascalPig(),clock:clockPig()};
+const setup=document.getElementById("setup"), game=document.getElementById("game"), board=document.getElementById("board");
+const nameInput=document.getElementById("name"), who=document.getElementById("who"), scoreEl=document.getElementById("score"), timeEl=document.getElementById("time");
+const statusEl=document.getElementById("status"), result=document.getElementById("result"), finalEl=document.getElementById("final"), settingText=document.getElementById("settingText");
+let cells=9, spawnMs=1100, speedMode="普通", score=0, active=-1, kind="normal", running=false;
+let gameTimer=null, spawnTimer=null, countTimer=null, secondsLeft=30;
+
+document.querySelectorAll(".cells").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".cells").forEach(x=>x.classList.remove("selected"));
+  btn.classList.add("selected"); cells=Number(btn.dataset.cells);
+}));
+document.querySelectorAll(".speed").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".speed").forEach(x=>x.classList.remove("selected"));
+  btn.classList.add("selected"); spawnMs=Number(btn.dataset.ms); speedMode=btn.dataset.mode;
+}));
+
+function makeBoard(){
+  board.innerHTML=""; board.className="board c"+cells;
+  for(let i=0;i<cells;i++){
+    const b=document.createElement("button"); b.type="button"; b.className="hole";
+    b.addEventListener("click",()=>hit(i,b)); board.appendChild(b);
+  }
+}
+function clearPig(){[...board.children].forEach(x=>x.innerHTML="");active=-1;}
+function scheduleSpawn(delay=0){
+  clearTimeout(spawnTimer);
+  if(!running)return;
+  spawnTimer=setTimeout(()=>{
+    if(!running)return;
+    spawn();
+    // 每隻豬完整停留所選速度，不再被另一個 interval 提前蓋掉
+    scheduleSpawn(spawnMs);
+  },delay);
+}
+function spawn(){
+  if(!running)return;
+  clearPig();
+  active=Math.floor(Math.random()*cells);
+  const r=Math.random();
+  // V12.1：提高搗蛋豬比例；黃金豬維持稀有
+  kind=r<.12?"gold":r<.22?"clock":r<.40?"bad":"normal";
+  board.children[active].innerHTML=pigHTML[kind];
+}
+function hit(i,b){
+  if(!running||i!==active)return;
+  if(kind==="clock"){
+    secondsLeft+=3;
+    timeEl.textContent=secondsLeft;
+    document.getElementById("timeTop").textContent=secondsLeft;
+    b.innerHTML=`<div style="font-weight:900;font-size:clamp(20px,6vw,36px);color:#087f8c;text-shadow:0 2px 0 #fff;padding-bottom:20%">+3秒！</div>`;
+  }else{
+    score+=kind==="gold"?3:kind==="bad"?-2:1;
+    scoreEl.textContent=score;
+    document.getElementById("scoreTop").textContent=score;
+    b.innerHTML=`<div style="font-size:clamp(26px,7vw,42px);padding-bottom:20%">💗</div>`;
+  }
+  active=-1;
+  scheduleSpawn(180);
+}
+function finish(){
+  running=false; clearInterval(gameTimer); clearTimeout(spawnTimer); clearPig();
+  statusEl.textContent="時間到！";
+  finalEl.textContent=score;
+  settingText.textContent=`${cells} 格・${speedMode}速度`;
+  result.classList.remove("hidden");
+  saveScore();
+}
+function begin(){
+  const playerName=nameInput.value.trim();
+  if(!playerName){
+    nameInput.focus();
+    nameInput.style.borderColor="#ff6f8f";
+    statusEl.textContent="請先輸入名字喔！";
+    return;
+  }
+  nameInput.style.borderColor="";
+  clearInterval(gameTimer); clearTimeout(spawnTimer); clearInterval(countTimer);
+  running=false; score=0; secondsLeft=30; scoreEl.textContent="0"; timeEl.textContent="30"; document.getElementById("scoreTop").textContent="0"; document.getElementById("timeTop").textContent="30"; result.classList.add("hidden");
+  who.textContent=playerName; makeBoard();
+  game.classList.remove("hidden");
+  let c=4; statusEl.textContent=`${c} 秒後開始！`;
+  countTimer=setInterval(()=>{
+    c--;
+    if(c>0) statusEl.textContent=`${c} 秒後開始！`;
+    else{
+      clearInterval(countTimer); statusEl.textContent=`GO！　${cells}格・${speedMode}`;
+      running=true; scheduleSpawn(0);
+      gameTimer=setInterval(()=>{secondsLeft--;timeEl.textContent=secondsLeft;document.getElementById("timeTop").textContent=secondsLeft;if(secondsLeft<=0)finish();},1000);
+    }
+  },700);
+}
+document.getElementById("start").addEventListener("click",begin);
+document.getElementById("again").addEventListener("click",()=>{
+  clearInterval(gameTimer);clearTimeout(spawnTimer);clearInterval(countTimer);running=false;
+  result.classList.add("hidden"); statusEl.textContent="選好設定後，按「開始遊戲」";
+});
+
+document.getElementById("legend").innerHTML=
+  `<span>${normalPig().replace('class="pig-svg"','style="width:28px;height:28px"')} +1</span>`+
+  `<span>${goldPig().replace('class="pig-svg"','style="width:28px;height:28px"')} +3</span>`+
+  `<span>${rascalPig().replace('class="pig-svg"','style="width:28px;height:28px"')} −2</span>`;
+
+document.getElementById("normalIcon").innerHTML=normalPig();
+document.getElementById("goldIcon").innerHTML=goldPig();
+document.getElementById("badIcon").innerHTML=rascalPig();
+
+function playerId(name){
+  return (name||"").trim().normalize("NFKC").toLocaleLowerCase();
+}
+
+const attemptsRef=db.ref(`${TEST_ROOT}/attempts`);
+
+function saveScore(){
+  const display=nameInput.value.trim();
+  if(!display){ statusEl.textContent="成績未儲存：沒有玩家名字"; return; }
+
+  statusEl.textContent="時間到！正在儲存成績…";
+
+  // V12.3 改成每一局都新增一筆獨立紀錄，不再覆寫任何舊玩家節點。
+  const data={
+    name:display,
+    playerId:playerId(display),
+    score:Number(score),
+    cells:Number(cells),
+    speed:speedMode,
+    updatedAt:firebase.database.ServerValue.TIMESTAMP
+  };
+
+  const newRef=attemptsRef.push();
+  newRef.set(data)
+    .then(()=>newRef.once("value"))
+    .then(check=>{
+      const saved=check.val();
+      if(!saved || saved.name!==display || Number(saved.score)!==Number(score)){
+        throw new Error("Firebase verify failed");
+      }
+      return refreshLeaderboard();
+    })
+    .then(()=>{
+      statusEl.textContent="時間到！排行榜已更新 ✓";
+    })
+    .catch(err=>{
+      console.error("saveScore failed",err);
+      statusEl.textContent="時間到！排行榜儲存失敗，請再試一次";
+    });
+}
+
+function renderLeaderboardSnapshot(snap){
+  // 同一暱稱可能有很多局；顯示時才合併，只保留該暱稱最高分。
+  const best=new Map();
+
+  snap.forEach(ch=>{
+    const r=ch.val()||{};
+    const id=r.playerId || playerId(r.name);
+    if(!id)return;
+
+    const old=best.get(id);
+    if(!old || Number(r.score||0)>Number(old.score||0)){
+      best.set(id,r);
+    }
+  });
+
+  const rows=[...best.values()];
+  rows.sort((a,b)=>Number(b.score||0)-Number(a.score||0));
+
+  const host=document.getElementById("rankRows");
+  if(!rows.length){
+    host.innerHTML=`<div class="row"><span>還沒有成績</span><strong>—</strong></div>`;
+    return;
+  }
+
+  host.innerHTML=rows.slice(0,10).map((r,i)=>{
+    const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`;
+    return `<div class="row"><span>${medal} ${escapeHtml(r.name)} <span class="tag">${r.cells}格・${escapeHtml(r.speed)}</span></span><strong>${Number(r.score||0)} 分</strong></div>`;
+  }).join("");
+}
+
+function refreshLeaderboard(){
+  return attemptsRef.once("value").then(renderLeaderboardSnapshot);
+}
+
+// 其他手機新增成績時即時同步。
+attemptsRef.on("value",renderLeaderboardSnapshot);
+refreshLeaderboard().catch(err=>console.error("leaderboard initial refresh failed",err));
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+</script>
+</body>
+</html>
