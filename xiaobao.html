@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>甜心戳戳樂 V32</title>
+<title>甜心戳戳樂 V31</title>
 <style>
 :root{
   --bg1:#fffaf0; --bg2:#fff2f6; --panel:#fffdfc; --ink:#705f64; --muted:#9c878d;
@@ -107,7 +107,7 @@ textarea{min-height:72px;resize:vertical}
 <div class="wrap">
   <header class="hero">
     <h1>♡ 戳戳樂 ♡</h1>
-    <div class="ribbon" id="heroRibbon">每人可抽 1 次・祝你好運！</div>
+    <div class="ribbon" id="drawLimitRibbon">每人最多可抽 1 次・祝你好運！</div>
   </header>
 
   <div class="topnav">
@@ -122,7 +122,7 @@ textarea{min-height:72px;resize:vertical}
       <div class="field"><label>暱稱</label><input id="nick" placeholder="請輸入暱稱"></div>
       <div class="field"><label>房間密碼</label><input id="playerRoomPass" type="password" placeholder="請輸入活動房間密碼"></div>
       <button class="btn full" onclick="enterRoom()">進入戳戳樂</button>
-      <p class="note" id="playerLimitNote">同一個暱稱本場最多可抽 1 次；Firebase 即時鎖格。</p>
+      <p class="note" id="playerEntryNote">同一個暱稱每場最多可抽 1 次；系統使用 Firebase 即時鎖格。</p>
     </div>
 
     <div id="gameArea" class="hidden">
@@ -188,7 +188,8 @@ textarea{min-height:72px;resize:vertical}
           <button type="button" class="btn yellow full" style="margin-top:-4px;margin-bottom:14px" onclick="updateCurrentRoomPassword()">🔑 只修改目前場次房間密碼</button>
           <div id="roomPasswordMsg" class="note" style="margin-top:-6px;margin-bottom:14px"></div>
           <div class="field"><label>格子數量</label><input id="cellCount" type="number" min="1" max="500" value="150"></div>
-          <div class="field"><label>每人可抽次數</label><input id="maxDraws" type="number" min="1" max="500" value="1"><div class="note">例如 100 格、每人可抽 50 次，就輸入 50。</div></div>
+          <div class="field"><label>每人可抽次數</label><input id="maxDraws" type="number" min="1" max="500" value="1"></div>
+          <div class="note" style="margin-top:-8px;margin-bottom:12px">例如：100 格、每人可抽 50 次，就填 50。</div>
           <div class="field"><label>備註說明</label><textarea id="memo">每人限抽一次</textarea></div>
 
           <h3>🎁 獎品清單設定方式</h3>
@@ -471,10 +472,10 @@ async function generateGame(){
   const draftEndTime=q("endTime").value;
   const draftMemo=q("memo").value.trim();
   const cells=+q("cellCount").value||0;
-  const draftMaxDraws=Math.max(1,Math.min(500,+q("maxDraws").value||1));
+  const maxDraws=+q("maxDraws").value||1;
   if(selectedEnv!==activeEnv) setActivityEnv(selectedEnv);
   if(cells<1 || cells>500){alert("格子數量請設定 1～500");return}
-  if(draftMaxDraws>cells){alert("每人可抽次數不能超過格子數量");return}
+  if(maxDraws<1 || maxDraws>cells){alert(`每人可抽次數請設定 1～${cells}`);return}
   let assignments=[];
   if(S.mode==="A"){
     const rows=[...document.querySelectorAll(".prizeRow")];
@@ -521,7 +522,7 @@ async function generateGame(){
   history=Object.fromEntries(historyEntries);
   const newPeriod=oldGame ? oldPeriod+1 : 1;
 
-  S.cells=cells; S.maxDraws=draftMaxDraws; S.roomPass=draftRoomPass; S.activityName=draftActivityName;
+  S.cells=cells; S.maxDraws=maxDraws; S.roomPass=draftRoomPass; S.activityName=draftActivityName;
   S.endTime=draftEndTime; S.memo=draftMemo; S.assignments=shuffle(assignments.slice());
   S.opened={}; S.usedNames={}; S.records=[]; S.history=history; S.periodNo=newPeriod;
   syncView();
@@ -578,13 +579,17 @@ async function enterRoom(){
   if(!name){alert("請輸入暱稱");return}
   if(pass!==S.roomPass){alert("房間密碼不正確");return}
   const key=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
+  let usedCount=0;
   try{
     const snap=await usersRef.child(key).once("value");
-    const drawCount=snap.exists() ? (Number(snap.val()?.count)||1) : 0;
-    if(drawCount>=S.maxDraws){alert(`這個暱稱已經抽滿 ${S.maxDraws} 次囉！`);return}
+    if(snap.exists()){
+      const v=snap.val()||{};
+      usedCount=Math.max(0,Number(v.count)||1);
+    }
+    if(usedCount>=S.maxDraws){alert(`這個暱稱已經抽滿 ${S.maxDraws} 次囉！`);return}
   }catch(e){alert("連線檢查失敗："+e.message);return}
   q("playerLogin").classList.add("hidden"); q("gameArea").classList.remove("hidden");
-  q("gameArea").dataset.name=name; q("whoami").textContent="玩家："+name; syncView();
+  q("gameArea").dataset.name=name; q("whoami").textContent="玩家："+name; q("playerStatus").textContent=`已抽 ${usedCount} / ${S.maxDraws} 次`; syncView();
 }
 function norm(s){return s.trim().toLocaleLowerCase("zh-TW")}
 function isNoPrize(prize){
@@ -633,7 +638,8 @@ async function pickCell(i){
   const userKey=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
   try{
     const used=await usersRef.child(userKey).once("value");
-    const usedCount=used.exists() ? (Number(used.val()?.count)||1) : 0;
+    const usedVal=used.exists() ? (used.val()||{}) : {};
+    const usedCount=used.exists() ? Math.max(0,Number(usedVal.count)||1) : 0;
     if(usedCount>=S.maxDraws){alert(`每位玩家最多可抽 ${S.maxDraws} 次喔！`);return}
     if(activityEnded()){
       alert(endedMessage());
@@ -647,22 +653,23 @@ async function pickCell(i){
       return {name:name,at:firebase.database.ServerValue.TIMESTAMP};
     });
     if(!result.committed){alert("手慢一步，這格剛剛被別人抽走了！請選其他格。");return}
-    /* 先鎖格，再用 transaction 累計此暱稱抽取次數；超過上限就釋放格子 */
+    /* 先鎖格，再用 transaction 累計這個暱稱的抽獎次數；超過上限就釋放剛才鎖住的格子。 */
     const userResult=await usersRef.child(userKey).transaction(current=>{
-      const count=current ? (Number(current.count)||1) : 0;
+      const count=current ? Math.max(0,Number(current.count)||1) : 0;
       if(count>=S.maxDraws) return;
-      return {name:name,count:count+1,lastCell:i,lastAt:firebase.database.ServerValue.TIMESTAMP};
+      return {name:name,count:count+1,at:firebase.database.ServerValue.TIMESTAMP};
     });
     if(!userResult.committed){
       await claim.remove();
       alert(`這個暱稱已經抽滿 ${S.maxDraws} 次囉！`);
       return;
     }
+    const newCount=Math.max(1,Number(userResult.snapshot.val()?.count)||1);
     const prize=S.assignments[i] ?? "幸運小禮物";
     const rec={cell:i+1,prize:prize,name:name,isProxy:false,at:firebase.database.ServerValue.TIMESTAMP};
     await recordsRef.push(rec);
     showResultPopup(prize);
-    q("playerStatus").textContent=isNoPrize(prize)?"這次遇到搗蛋豬！":`已抽中：${prize}`;
+    q("playerStatus").textContent=`已抽 ${newCount} / ${S.maxDraws} 次`;
   }catch(e){
     const msg=String(e?.message||e||"").toLowerCase();
     const code=String(e?.code||"").toLowerCase();
@@ -681,7 +688,8 @@ async function proxyDraw(){
   const userKey=encodeURIComponent(norm(name)).replace(/\./g,"%2E");
   try{
     const used=await usersRef.child(userKey).once("value");
-    const usedCount=used.exists() ? (Number(used.val()?.count)||1) : 0;
+    const usedVal=used.exists() ? (used.val()||{}) : {};
+    const usedCount=used.exists() ? Math.max(0,Number(usedVal.count)||1) : 0;
     if(usedCount>=S.maxDraws){alert(`這個暱稱已經抽滿 ${S.maxDraws} 次了`);return}
     const claims=(await claimsRef.once("value")).val()||{};
     if(activityEnded()){alert(endedMessage());return}
@@ -698,9 +706,9 @@ async function proxyDraw(){
     }
     if(chosen===null){alert("剛好所有格子都被其他玩家搶走了");return}
     const ur=await usersRef.child(userKey).transaction(cur=>{
-      const count=cur ? (Number(cur.count)||1) : 0;
+      const count=cur ? Math.max(0,Number(cur.count)||1) : 0;
       if(count>=S.maxDraws) return;
-      return {name:name,count:count+1,lastCell:chosen,proxy:true,lastAt:firebase.database.ServerValue.TIMESTAMP};
+      return {name:name,count:count+1,proxy:true,at:firebase.database.ServerValue.TIMESTAMP};
     });
     if(!ur.committed){await claimsRef.child(String(chosen)).remove();alert(`這個暱稱已經抽滿 ${S.maxDraws} 次了`);return}
     const prize=S.assignments[chosen]??"幸運小禮物";
@@ -710,11 +718,11 @@ async function proxyDraw(){
 }
 function closePopup(){q("prizePopup").classList.add("hidden")}
 function syncView(){
-  q("playerTitle").textContent="♡ "+S.activityName+" ♡"; q("playerMemo").textContent=S.memo||"每人限抽一次";
+  q("playerTitle").textContent="♡ "+S.activityName+" ♡"; q("playerMemo").textContent=S.memo||`每人最多可抽 ${S.maxDraws} 次`;
   q("infoName").textContent=S.activityName; q("infoCells").textContent=S.cells;
   if(q("infoMaxDraws")) q("infoMaxDraws").textContent=S.maxDraws;
-  if(q("heroRibbon")) q("heroRibbon").textContent=`每人可抽 ${S.maxDraws} 次・祝你好運！`;
-  if(q("playerLimitNote")) q("playerLimitNote").textContent=`同一個暱稱本場最多可抽 ${S.maxDraws} 次；Firebase 即時鎖格。`;
+  if(q("drawLimitRibbon")) q("drawLimitRibbon").textContent=`每人最多可抽 ${S.maxDraws} 次・祝你好運！`;
+  if(q("playerEntryNote")) q("playerEntryNote").textContent=`同一個暱稱每場最多可抽 ${S.maxDraws} 次；系統使用 Firebase 即時鎖格。`;
   q("infoEnd").textContent=activityEnded() ? (formatEndTime()+"（已結束）") : formatEndTime();
   q("remainCount").textContent=S.cells-Object.keys(S.opened).length;
   if(activityEnded() && q("playerStatus")) q("playerStatus").textContent="活動已結束";
@@ -850,7 +858,7 @@ function loadAdminFormFromGame(g){
   q("endTime").value=g.endTime||"";
   q("setRoomPass").value=g.roomPass||"";
   q("cellCount").value=Number(g.cells)||150;
-  q("maxDraws").value=Number(g.maxDraws)||1;
+  q("maxDraws").value=Math.max(1,Number(g.maxDraws)||1);
   q("memo").value=g.memo||"每人限抽一次";
 
   const assignments=Array.isArray(g.assignments)?g.assignments:[];
@@ -892,7 +900,7 @@ function handleGameValue(snap){
     return;
   }
   S.activityName=g.activityName||"戳戳樂"; S.endTime=g.endTime||""; S.endAt=g.endAt||null; S.memo=g.memo||"每人限抽一次";
-  S.cells=Number(g.cells)||150; S.maxDraws=Number(g.maxDraws)||1; S.roomPass=g.roomPass||""; S.assignments=g.assignments||[];
+  S.cells=Number(g.cells)||150; S.maxDraws=Math.max(1,Number(g.maxDraws)||1); S.roomPass=g.roomPass||""; S.assignments=g.assignments||[];
   S.history=g.history||{}; S.periodNo=Number(g.periodNo)||1;
   loadAdminFormFromGame(g);
   syncView();
