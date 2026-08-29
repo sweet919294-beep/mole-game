@@ -461,9 +461,15 @@ q("cellCount").addEventListener("input",calcTotals); q("freePrizes").addEventLis
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 async function generateGame(){
+  /* 先把管理員目前輸入的設定完整保存下來。
+     後面的 Firebase 非同步讀取若觸發即時監聽，也不能把這次要生成的新名稱洗回舊值。 */
   const selectedEnv=q("activityEnv")?.value||"room1";
-  if(selectedEnv!==activeEnv) setActivityEnv(selectedEnv);
+  const draftActivityName=q("activityName").value.trim()||"戳戳樂";
+  const draftRoomPass=q("setRoomPass").value.trim();
+  const draftEndTime=q("endTime").value;
+  const draftMemo=q("memo").value.trim();
   const cells=+q("cellCount").value||0;
+  if(selectedEnv!==activeEnv) setActivityEnv(selectedEnv);
   if(cells<1 || cells>500){alert("格子數量請設定 1～500");return}
   let assignments=[];
   if(S.mode==="A"){
@@ -511,8 +517,8 @@ async function generateGame(){
   history=Object.fromEntries(historyEntries);
   const newPeriod=oldGame ? oldPeriod+1 : 1;
 
-  S.cells=cells; S.roomPass=q("setRoomPass").value.trim(); S.activityName=q("activityName").value.trim()||"戳戳樂";
-  S.endTime=q("endTime").value; S.memo=q("memo").value.trim(); S.assignments=shuffle(assignments.slice());
+  S.cells=cells; S.roomPass=draftRoomPass; S.activityName=draftActivityName;
+  S.endTime=draftEndTime; S.memo=draftMemo; S.assignments=shuffle(assignments.slice());
   S.opened={}; S.usedNames={}; S.records=[]; S.history=history; S.periodNo=newPeriod;
   syncView();
   const endAt=parseLocalDateTime(S.endTime);
