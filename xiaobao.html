@@ -461,7 +461,8 @@ q("cellCount").addEventListener("input",calcTotals); q("freePrizes").addEventLis
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 async function generateGame(){
-  setActivityEnv(q("activityEnv")?.value||"room1");
+  const selectedEnv=q("activityEnv")?.value||"room1";
+  if(selectedEnv!==activeEnv) setActivityEnv(selectedEnv);
   const cells=+q("cellCount").value||0;
   if(cells<1 || cells>500){alert("格子數量請設定 1～500");return}
   let assignments=[];
