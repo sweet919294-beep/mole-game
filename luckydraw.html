@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>線上抽獎系統｜Dashboard V31</title>
+<title>線上抽獎系統｜Dashboard V33</title>
 <style>
 :root{
   --bg:#f6f7fb; --card:#ffffff; --ink:#333844; --muted:#7b8190;
@@ -86,10 +86,6 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 .mini-music-pill .music-heart{font-size:12px;color:#d88dab}
 .mini-music-pill.playing{background:rgba(255,247,252,.88);box-shadow:0 7px 20px rgba(189,119,153,.14)}
 .mini-music-pill .music-state{font-size:11px;color:#947d92;font-weight:650}
-#musicFile{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.test-music-loader{display:flex;justify-content:flex-end;align-items:center;margin-top:8px}
-.test-music-label{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.45);border:1px dashed rgba(125,143,170,.28);color:#8b8290;font-size:11px;font-weight:650;cursor:pointer;user-select:none}
-.test-music-label:active{transform:scale(.98)}
 .floating-note{position:absolute;right:10px;top:4px;pointer-events:none;color:#c77fa3;font-weight:800;font-size:15px;opacity:0;animation:floatNote 2.25s ease-out forwards}
 @keyframes floatNote{0%{transform:translate(0,2px) scale(.85);opacity:0}15%{opacity:.9}100%{transform:translate(var(--drift,10px),-42px) scale(1.08);opacity:0}}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);z-index:220;padding:10px 14px;border-radius:999px;background:rgba(48,53,64,.9);color:#fff;font-size:13px;opacity:0;pointer-events:none;transition:.2s ease}
@@ -250,7 +246,6 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
   box-shadow:0 7px 20px rgba(100,81,110,.09)
 }
 .mini-music-pill.playing{background:linear-gradient(135deg,rgba(255,250,253,.96),rgba(246,250,255,.92));box-shadow:0 8px 22px rgba(187,121,153,.12)}
-.test-music-label{background:rgba(255,255,255,.52)}
 .copy-card{border:1px solid #edf0f4;box-shadow:0 24px 70px rgba(31,37,49,.16)}
 .toast{box-shadow:0 8px 28px rgba(37,43,55,.18)}
 @media(max-width:640px){
@@ -312,6 +307,10 @@ body{background:linear-gradient(135deg,#f5f9ff 0%,#fbf9fb 46%,#fff7fa 100%)}
 #setup .card:first-child h2::before{content:"✎";color:#6e91bf}#setup .card:nth-child(2) h2::before{content:"♙";color:#6e91bf}
 #prizes .card:first-child h2::before{content:"♕";color:#d1935e}#history .card:first-child h2::before{content:"♕";color:#d1935e}#history .card:nth-child(2) h2::before{content:"◷";color:#76a9a0}
 .big-draw .winner{font-size:clamp(42px,7vw,76px);color:#3d5878}.big-draw .sub{font-size:15px}
+.big-draw .winner.multi-winners{font-size:clamp(30px,4.8vw,52px);line-height:1.38;max-width:min(100%,820px);margin-inline:auto;white-space:normal;overflow-wrap:anywhere}
+.big-draw .winner.many-winners{font-size:clamp(24px,3.5vw,40px);line-height:1.42}
+.big-draw .winner.dense-winners{font-size:clamp(19px,2.6vw,31px);line-height:1.5}
+@media(max-width:640px){.big-draw .winner.multi-winners{font-size:clamp(27px,7.2vw,38px)}.big-draw .winner.many-winners{font-size:clamp(22px,5.9vw,31px)}.big-draw .winner.dense-winners{font-size:clamp(18px,4.8vw,25px)}}
 .prize-row:nth-child(3n+1){background:#f6f9ff}.prize-row:nth-child(3n+2){background:#fff7fa}.prize-row:nth-child(3n){background:#f3fbf8}
 .primary{background:linear-gradient(135deg,#72a4df,#668fca)}.pink{background:linear-gradient(135deg,#ffe9f3,#fbd8e8);color:#a35d7b}.soft{background:#edf5ff;color:#53739b}
 @media(max-width:900px){
@@ -413,10 +412,7 @@ body{background:linear-gradient(135deg,#f5f9ff 0%,#fbf9fb 46%,#fff7fa 100%)}
         </button>
       </div>
     </div>
-    <div class="test-music-loader">
-      <label class="test-music-label" for="musicFile">🎧 測試用｜載入音樂</label>
-      <input id="musicFile" type="file" accept="audio/*">
-    </div>
+
   </section>
 
   <div class="tabs">
@@ -600,7 +596,7 @@ body{background:linear-gradient(135deg,#f5f9ff 0%,#fbf9fb 46%,#fff7fa 100%)}
     </div>
   </div>
 </div>
-<audio id="bgMusic" loop preload="metadata"></audio>
+<audio id="bgMusic" loop preload="metadata" src="./sentimental-piano-emotional.mp3"></audio>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -676,6 +672,27 @@ function ldReadLocal(env){
 }
 function ldWriteLocal(env,state){localStorage.setItem(ldLocalKey(env),JSON.stringify(state));}
 
+function renderDashboardWinners(winners, prizeName){
+  const wt=document.getElementById('winnerText');
+  const wm=document.getElementById('winnerMore');
+  const dl=document.getElementById('drawLabel');
+  const list=Array.isArray(winners)?winners.filter(v=>v!==undefined&&v!==null):[];
+  if(!wt) return;
+  wt.classList.remove('multi-winners','many-winners','dense-winners');
+  if(!list.length){
+    wt.textContent='—';
+    if(wm) wm.textContent='';
+    if(dl) dl.textContent='等待抽獎';
+    return;
+  }
+  wt.textContent=list.join('、');
+  if(list.length>1) wt.classList.add('multi-winners');
+  if(list.length>8) wt.classList.add('many-winners');
+  if(list.length>20) wt.classList.add('dense-winners');
+  if(wm) wm.textContent=list.length>1?`本次共 ${list.length} 名`:'';
+  if(dl) dl.textContent=prizeName?`🎉 ${prizeName}`:'🎉 中獎結果';
+}
+
 function ldApplyRoomState(g){
   /* V31：Firebase 即時回寫會重新套用房間狀態；先記住主持人目前選到的獎項，
      避免每次同步後 drawPrize 被 renderPrizes() 重建並跳回第一項。 */
@@ -711,18 +728,13 @@ function ldApplyRoomState(g){
   /* V26：不要讓房間載入層改寫 V17 的名單模式按鈕狀態。
      V17 原本允許手動／自動模式正常切換；真正產生編號時再由 generateNumbers 依 S.locked 阻擋。 */
   document.querySelectorAll('#manualModeBtn,#autoModeBtn,#generateNumbers').forEach(x=>x.disabled=false);
-  const wt=document.getElementById('winnerText'), wm=document.getElementById('winnerMore'), dl=document.getElementById('drawLabel');
   /* V31：HTTPS/Firebase 會在每次抽獎儲存後觸發 value listener。
-     不能在同步時把剛顯示的中獎者重設為「等待抽獎」，改由最新一筆紀錄還原 Dashboard。 */
+     V33：Dashboard 與全螢幕／自動抽獎一致，本次所有中獎者同級顯示。 */
   const latest=S.history.length?S.history[S.history.length-1]:null;
   if(latest && Array.isArray(latest.winners) && latest.winners.length){
-    if(wt) wt.textContent=latest.winners[0];
-    if(wm) wm.textContent=latest.winners.length>1?`其餘中獎者：${latest.winners.slice(1).join('、')}`:'';
-    if(dl) dl.textContent=`🎉 ${latest.prize}`;
+    renderDashboardWinners(latest.winners,latest.prize);
   }else{
-    if(wt) wt.textContent='—';
-    if(wm) wm.textContent='';
-    if(dl) dl.textContent='等待抽獎';
+    renderDashboardWinners([],null);
   }
 }
 
@@ -1156,10 +1168,11 @@ document.getElementById('drawBtn').onclick=()=>{
   const w=randPick(pool,qty);
   const label=document.getElementById('drawLabel'), text=document.getElementById('winnerText'), more=document.getElementById('winnerMore');
   label.textContent=`${prize.name} 抽獎中…`; more.textContent='';
+  text.classList.remove('multi-winners','many-winners','dense-winners');
   manualDrawing=true; syncManualDrawAvailability();
   let ticks=0; const anim=setInterval(()=>{
     text.textContent=pool[Math.floor(Math.random()*pool.length)]||'—';
-    if(++ticks>22){clearInterval(anim); text.textContent=w[0]; more.textContent=w.length>1?`其餘中獎者：${w.slice(1).join('、')}`:''; label.textContent=`🎉 ${prize.name}`;
+    if(++ticks>22){clearInterval(anim); renderDashboardWinners(w,prize.name);
       playRevealChime();
       S.history.push({time:new Date().toLocaleString('zh-TW',{hour12:false}),prize:prize.name,winners:w});
       manualDrawing=false;
@@ -1174,7 +1187,7 @@ function renderHistory(){
   el.innerHTML=S.history.length?S.history.map((h,i)=>`<div class="prize"><strong>${i+1}. ${esc(h.prize)}</strong><div>${h.winners.map(esc).join('、')}</div><div class="small">${h.time}</div></div>`).join(''):'<div class="sub">目前沒有抽獎紀錄</div>';
   syncManualDrawAvailability();
 }
-document.getElementById('resetDraw').onclick=()=>{if(confirm('確定清空全部抽獎結果？')){S.history=[];S.currentPeriodSaved=false;renderHistory();document.getElementById('winnerText').textContent='—';document.getElementById('winnerMore').textContent='';document.getElementById('drawLabel').textContent='等待抽獎';}};
+document.getElementById('resetDraw').onclick=()=>{if(confirm('確定清空全部抽獎結果？')){S.history=[];S.currentPeriodSaved=false;renderHistory();renderDashboardWinners([],null);}};
 function groupedResultText(){
   const groups=new Map();
   S.history.forEach(h=>{
@@ -1230,14 +1243,12 @@ document.getElementById('copyAgain').onclick=async()=>{
 };
 document.getElementById('closeCopyModal').onclick=()=>document.getElementById('copyModal').classList.remove('show');
 
-// 背景音樂：測試版將「載入音樂」與可愛 Music 小框分離。
-// 載入檔案只做一次；Music 小框永遠只負責播放 / 暫停。正式部署時會直接指定網站內的 MP3，移除測試載入入口。
+// 背景音樂：正式版固定讀取網站同層的 sentimental-piano-emotional.mp3。
+// 受瀏覽器自動播放政策限制，第一次仍需使用者點 Music 才能開始。
 const bgMusic=document.getElementById('bgMusic');
 const musicToggle=document.getElementById('musicToggle');
 const musicStatus=document.getElementById('musicStatus');
-const musicFile=document.getElementById('musicFile');
 const miniMusicWrap=document.getElementById('miniMusicWrap');
-let musicObjectUrl='';
 let noteTimer=null;
 bgMusic.volume=.52;
 
@@ -1261,28 +1272,17 @@ function scheduleMusicNotes(){
   },1800+Math.random()*1800);
 }
 function syncMusicUI(){
-  const loaded=!!bgMusic.src;
-  const playing=loaded&&!bgMusic.paused;
+  const sourceReady=!!bgMusic.getAttribute('src')&&!bgMusic.error;
+  const playing=sourceReady&&!bgMusic.paused;
   musicToggle.classList.toggle('playing',playing);
-  musicStatus.textContent=!loaded?'待機':playing?'播放中':'已就緒';
+  musicStatus.textContent=!sourceReady?'音樂未載入':playing?'播放中':'已就緒';
   if(playing) scheduleMusicNotes(); else clearTimeout(noteTimer);
 }
 
-musicFile.onchange=e=>{
-  const f=e.target.files&&e.target.files[0];
-  if(!f) return;
-  if(musicObjectUrl) URL.revokeObjectURL(musicObjectUrl);
-  musicObjectUrl=URL.createObjectURL(f);
-  bgMusic.pause();
-  bgMusic.src=musicObjectUrl;
-  bgMusic.load();
-  syncMusicUI();
-  showToast('背景音樂已載入，點右上 Music 開始播放');
-};
-
 musicToggle.onclick=async()=>{
-  if(!bgMusic.src){
-    showToast('測試版請先按「載入音樂」');
+  if(bgMusic.error){
+    showToast('找不到背景音樂檔，請確認 MP3 已和 luckydraw.html 放在同一層');
+    syncMusicUI();
     return;
   }
   if(bgMusic.paused){
@@ -1296,9 +1296,15 @@ musicToggle.onclick=async()=>{
   }
   syncMusicUI();
 };
+bgMusic.oncanplay=syncMusicUI;
 bgMusic.onplay=syncMusicUI;
 bgMusic.onpause=syncMusicUI;
 bgMusic.onended=syncMusicUI;
+bgMusic.onerror=()=>{
+  syncMusicUI();
+  console.warn('背景音樂載入失敗：請確認 sentimental-piano-emotional.mp3 已上傳到網站同層。');
+};
+syncMusicUI();
 
 // 中獎提示音：每個獎項揭曉時只響一次，短而柔和。
 let audioCtx=null;
