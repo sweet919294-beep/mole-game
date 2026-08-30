@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>小豬打打樂</title>
+<title>小豬打打樂・V16 音效測試版</title>
 <style>
 :root{
   --cream:#fff8df;--pink:#ff557d;--pink2:#ffdce5;--green:#c9f26a;
@@ -196,7 +196,7 @@ filter:saturate(1.04) drop-shadow(0 3px 3px rgba(69,32,20,.16));position:relativ
       </section>
 
       <section class="card rank">
-        <h3>🏆 小豬高手榜</h3>
+        <h3>🏆 小豬高手榜（V16 音效測試）</h3>
         <div id="rankRows"><div class="row"><span>還沒有成績</span><strong>—</strong></div></div>
         <div class="note">只保留每位玩家的最高分。</div>
       </section>
@@ -271,6 +271,26 @@ async function ensureAudioReady(){
     console.warn('音效初始化失敗',err);
     return false;
   }
+}
+
+function playCountdownBeep(isFinal=false){
+  if(!soundOn)return;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioCtx) audioCtx=new AC();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    const now=audioCtx.currentTime;
+    osc.type='sine';
+    osc.frequency.setValueAtTime(isFinal?880:660,now);
+    gain.gain.setValueAtTime(0.0001,now);
+    gain.gain.exponentialRampToValueAtTime(isFinal?0.32:0.22,now+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001,now+(isFinal?0.42:0.16));
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now+(isFinal?0.44:0.18));
+  }catch(err){ console.warn('倒數提示音播放失敗',err); }
 }
 
 async function playVoice(key,chance=1){
@@ -397,7 +417,7 @@ function begin(){
     else{
       clearInterval(countTimer); statusEl.textContent=`GO！　${cells}格・${speedMode}`;
       running=true; scheduleSpawn(0);
-      gameTimer=setInterval(()=>{secondsLeft--;timeEl.textContent=secondsLeft;document.getElementById("timeTop").textContent=secondsLeft;if(secondsLeft<=0)finish();},1000);
+      gameTimer=setInterval(()=>{secondsLeft--;timeEl.textContent=secondsLeft;document.getElementById("timeTop").textContent=secondsLeft;if(secondsLeft>0&&secondsLeft<=5)playCountdownBeep(false);if(secondsLeft<=0){playCountdownBeep(true);finish();}},1000);
     }
   },700);
 }
