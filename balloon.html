@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>射氣球 V0.14 局勢壓力版</title>
 <style>
 *{box-sizing:border-box}
@@ -11,7 +11,7 @@ body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;back
 .app{height:100%;display:grid;grid-template-rows:auto 1fr}
 .top{display:flex;gap:8px;padding:8px;background:rgba(255,255,255,.8);backdrop-filter:blur(8px);font-weight:800;align-items:center;justify-content:center;flex-wrap:wrap;z-index:60}
 .pill{background:#fff;border-radius:16px;padding:7px 12px;box-shadow:0 2px 8px #7aa7bd33}
-.game{position:relative;overflow:hidden;background:linear-gradient(#dff4ff 0 78%,#d8f0d2 78%);touch-action:manipulation}
+.game{position:relative;overflow:hidden;background:linear-gradient(#dff4ff 0 78%,#d8f0d2 78%);touch-action:none;-webkit-touch-callout:none}
 .cloud{position:absolute;background:#fff9;border-radius:50px;width:110px;height:34px;filter:blur(.2px);pointer-events:none}
 .cloud:before,.cloud:after{content:'';position:absolute;background:#fff9;border-radius:50%}
 .cloud:before{width:48px;height:48px;left:18px;top:-22px}.cloud:after{width:58px;height:58px;right:10px;top:-28px}
@@ -220,6 +220,18 @@ function finish(){
   if(!running)return;running=false;clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);balls.forEach(remove);
   document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0;document.getElementById('stats').textContent=`射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜剩餘 ${ammo} 發`;document.getElementById('end').classList.add('show')
 }
+// Mobile game: suppress browser zoom/gesture handling without changing gameplay.
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-lastTouchEnd<=300)e.preventDefault();
+  lastTouchEnd=now;
+},{passive:false});
+
 document.getElementById('go').onclick=begin;document.getElementById('again').onclick=begin;hud();
 })();
 </script>
