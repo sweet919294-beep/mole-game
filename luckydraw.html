@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>線上抽獎系統｜Dashboard V30</title>
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#333844; --muted:#7b8190;
+  --blue:#dbeafe; --blue2:#bfd9ff; --pink:#fce7f3; --pink2:#f9cfe3;
+  --gray:#eceff4; --line:#e5e7eb; --accent:#6d8fc7; --danger:#d96b7d;
+  --shadow:0 12px 30px rgba(57,67,87,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#f9fbff 0%,#f7f5f8 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+.wrap{max-width:920px;margin:auto;padding:16px}
+.hero{padding:22px;border-radius:24px;background:linear-gradient(135deg,var(--blue),var(--pink));box-shadow:var(--shadow);margin-bottom:16px}
+.hero h1{margin:0 0 6px;font-size:27px}.hero p{margin:0;color:#626978}
+.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px;position:sticky;top:0;background:rgba(246,247,251,.92);backdrop-filter:blur(10px);z-index:20}
+.tab{border:0;background:#fff;padding:11px 14px;border-radius:14px;white-space:nowrap;color:#5d6472;box-shadow:0 3px 10px rgba(0,0,0,.04)}
+.tab.active{background:#dce9ff;color:#35547e;font-weight:700}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin:12px 0}
+h2,h3{margin:0 0 12px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+input,textarea,select{width:100%;border:1px solid #dfe3ea;border-radius:13px;padding:12px 13px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:180px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{border:0;border-radius:13px;padding:11px 14px;font:inherit;font-weight:650;cursor:pointer}
+#closeFullDraw.draw-locked{pointer-events:none;opacity:.45;filter:grayscale(.15)}
+.primary{background:#7da0d5;color:#fff}.soft{background:#edf3ff;color:#49698e}.pink{background:#fde8f2;color:#985f79}.danger{background:#fff0f2;color:#b24f61}.ghost{background:#f4f5f7;color:#656c78}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8f9fb;border-radius:14px;margin-top:10px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:#eef2f8;color:#626978;font-size:13px}
+.locked{background:#e8f3ef;color:#38705c}
+.list{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fbfcfe}
+.item{padding:10px 12px;border-bottom:1px solid #eef0f3;display:flex;justify-content:space-between;gap:12px}.item:last-child{border-bottom:0}
+.prize-list-box{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fcfcfd}
+.prize-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line)}
+.prize-row:last-child{border-bottom:0}
+.prize-name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prize-meta{font-size:13px;color:var(--muted);white-space:nowrap}
+.icon-btn{width:34px;height:34px;padding:0;border-radius:10px;background:#fff0f2;color:#b24f61;font-size:18px;line-height:34px}
+.prize{padding:12px;border:1px solid var(--line);border-radius:14px;margin:8px 0;background:#fcfcfd}
+.big-draw{min-height:260px;display:grid;place-items:center;text-align:center;background:linear-gradient(145deg,#eef5ff,#fff2f8);border-radius:22px;border:1px solid #e9e7ef}
+.winner{font-size:34px;font-weight:800;letter-spacing:1px}.sub{color:var(--muted);font-size:14px}
+.display-modal{position:fixed;inset:0;background:#f7f8fb;z-index:100;display:none;flex-direction:column}
+.display-modal.show{display:flex}
+.display-head{padding:16px;background:linear-gradient(90deg,var(--blue),var(--pink));display:flex;justify-content:space-between;align-items:center}
+.display-list{flex:1;overflow:hidden;padding:16px;position:relative}
+#displayInner{will-change:transform;transform:translateZ(0)}
+.display-name{font-size:22px;padding:16px 18px;background:#fff;margin:8px 0;border-radius:16px;border:1px solid var(--line)}
+.small{font-size:12px;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+@media(max-width:640px){.row{grid-template-columns:1fr}.hero h1{font-size:23px}.winner{font-size:29px}.wrap{padding:12px}.hero-top{gap:8px}.mini-music-pill{min-height:36px;padding:7px 10px;font-size:12px}.mini-music-pill .music-state{display:none}}
+
+.full-draw-modal{position:fixed;inset:0;z-index:120;display:none;flex-direction:column;background:linear-gradient(145deg,#edf5ff 0%,#fff5fa 55%,#f5f6f8 100%)}
+.full-draw-modal.show{display:flex}
+.full-top{padding:16px 18px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid rgba(220,224,232,.8)}
+.full-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.full-prize{font-size:22px;font-weight:750;color:#52657d;margin-bottom:8px}
+.full-progress{font-size:14px;color:#7b8190;margin-bottom:38px}
+.full-winner{font-size:clamp(38px,10vw,72px);font-weight:850;letter-spacing:2px;min-height:1.4em;display:flex;align-items:center;justify-content:center}
+.full-more{max-width:720px;margin:14px auto 28px;color:#646b78;font-size:17px;line-height:1.7;min-height:1.7em}
+.full-action{min-width:180px;padding:15px 26px;border-radius:18px;background:#7da0d5;color:white;font-size:18px;box-shadow:0 10px 24px rgba(82,105,145,.18)}
+
+
+.mode-switch{display:flex;gap:8px;padding:5px;background:#f3f5f8;border-radius:14px}
+.mode-btn{flex:1;background:transparent;color:#68707e;box-shadow:none}
+.mode-btn.active{background:#fff;color:#456486;box-shadow:0 4px 12px rgba(66,81,105,.08)}
+.auto-number-panel{margin:12px 0;padding:14px;background:#f8faff;border:1px solid #e4eaf3;border-radius:16px}
+
+
+.display-controls{display:flex;gap:8px;align-items:center}
+.display-controls select{width:auto;min-width:84px;padding:9px 10px;border-radius:11px;background:#fff}
+@media(max-width:640px){
+  .display-head{align-items:flex-start;gap:10px}
+  .display-controls{flex-wrap:wrap;justify-content:flex-end}
+  .display-controls select{min-width:76px}
+}
+
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.hero-copy{min-width:0}
+.mini-music-wrap{position:relative;flex:0 0 auto}
+.mini-music-pill{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:8px 13px;border:1px solid rgba(255,255,255,.82);border-radius:999px;background:rgba(255,255,255,.72);color:#765c76;box-shadow:0 6px 18px rgba(100,81,110,.10);backdrop-filter:blur(9px);font-size:13px;font-weight:750;overflow:visible}
+.mini-music-pill .music-heart{font-size:12px;color:#d88dab}
+.mini-music-pill.playing{background:rgba(255,247,252,.88);box-shadow:0 7px 20px rgba(189,119,153,.14)}
+.mini-music-pill .music-state{font-size:11px;color:#947d92;font-weight:650}
+#musicFile{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.test-music-loader{display:flex;justify-content:flex-end;align-items:center;margin-top:8px}
+.test-music-label{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.45);border:1px dashed rgba(125,143,170,.28);color:#8b8290;font-size:11px;font-weight:650;cursor:pointer;user-select:none}
+.test-music-label:active{transform:scale(.98)}
+.floating-note{position:absolute;right:10px;top:4px;pointer-events:none;color:#c77fa3;font-weight:800;font-size:15px;opacity:0;animation:floatNote 2.25s ease-out forwards}
+@keyframes floatNote{0%{transform:translate(0,2px) scale(.85);opacity:0}15%{opacity:.9}100%{transform:translate(var(--drift,10px),-42px) scale(1.08);opacity:0}}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(14px);z-index:220;padding:10px 14px;border-radius:999px;background:rgba(48,53,64,.9);color:#fff;font-size:13px;opacity:0;pointer-events:none;transition:.2s ease}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.copy-modal{position:fixed;inset:0;z-index:160;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(45,49,58,.36);backdrop-filter:blur(6px)}
+.copy-modal.show{display:flex}.copy-card{width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(30,35,45,.18)}
+.copy-card textarea{min-height:300px;max-height:55vh;font-size:15px;line-height:1.65;white-space:pre;overflow:auto}.copy-card .actions{justify-content:flex-end}
+
+/* ===== V13 第二階段：前台視覺整理（僅樣式，不動抽獎邏輯） ===== */
+:root{
+  --bg:#f7f8fc;
+  --card:#ffffff;
+  --ink:#313747;
+  --muted:#7b8292;
+  --blue:#e5efff;
+  --blue2:#cddfff;
+  --pink:#fdebf4;
+  --pink2:#f8d6e6;
+  --line:#e8eaf0;
+  --accent:#7698cb;
+  --accent-deep:#5e7fae;
+  --danger:#d97183;
+  --shadow:0 12px 34px rgba(68,77,98,.075);
+  --shadow-soft:0 7px 20px rgba(68,77,98,.055);
+}
+body{
+  background:
+    radial-gradient(circle at 10% -10%,rgba(216,232,255,.58),transparent 30%),
+    radial-gradient(circle at 95% 4%,rgba(253,224,239,.52),transparent 28%),
+    linear-gradient(180deg,#fbfcff 0%,#f7f6f9 100%);
+}
+.wrap{max-width:900px;padding:14px 14px 34px}
+.hero{
+  position:relative;overflow:hidden;
+  padding:21px 21px 18px;border-radius:26px;
+  background:linear-gradient(135deg,rgba(223,236,255,.96),rgba(255,235,245,.94));
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 16px 38px rgba(77,85,109,.09);
+}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.hero::before{width:120px;height:120px;right:-38px;bottom:-66px;background:rgba(255,255,255,.34)}
+.hero::after{width:76px;height:76px;right:88px;top:-48px;background:rgba(255,255,255,.22)}
+.hero h1{font-size:26px;letter-spacing:.3px;color:#33394a}
+.hero p{font-size:13.5px;line-height:1.6;color:#697184}
+.tabs{
+  top:0;margin:12px -2px 4px;padding:6px 2px 9px;
+  gap:7px;background:rgba(247,248,252,.88)
+}
+.tab{
+  flex:1;min-width:max-content;padding:10px 12px;border-radius:15px;
+  color:#737a8a;background:rgba(255,255,255,.88);
+  border:1px solid rgba(232,234,240,.9);box-shadow:var(--shadow-soft);
+  transition:.18s ease
+}
+.tab.active{
+  background:linear-gradient(135deg,#dfeaff,#f6e9f1);
+  color:#496687;border-color:#d8e2f2;box-shadow:0 8px 20px rgba(85,106,139,.09)
+}
+.card{
+  border-radius:22px;padding:17px;border-color:#e7e9ef;
+  box-shadow:0 10px 28px rgba(70,79,98,.06)
+}
+.card h2,.card h3{color:#343a49;letter-spacing:.2px}
+.card h2{font-size:20px}.card h3{font-size:17px}
+label{font-weight:650;color:#777f90;font-size:12.5px}
+input,textarea,select{
+  border-color:#e0e4eb;border-radius:14px;padding:12px 13px;
+  background:#fefeff;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#bdd0ec;box-shadow:0 0 0 4px rgba(189,208,236,.2);background:#fff}
+textarea{line-height:1.65}
+button{border-radius:14px;transition:transform .12s ease,box-shadow .18s ease,filter .18s ease}
+button:active:not(:disabled){transform:translateY(1px) scale(.99)}
+.primary{background:linear-gradient(135deg,#82a4d7,#6f91c5);box-shadow:0 7px 16px rgba(91,125,174,.17)}
+.primary:hover{filter:brightness(1.02)}
+.soft{background:#eef4ff;color:#526f95}
+.pink{background:linear-gradient(135deg,#fdebf4,#f9deeb);color:#955f79}
+.ghost{background:#f4f5f8;color:#666e7d}
+.danger{background:#fff1f3;color:#b85b6a}
+.stat{
+  border:1px solid #edf0f4;background:linear-gradient(180deg,#fafbfe,#f7f8fb);
+  border-radius:15px
+}
+.badge{border:1px solid #e6e9ef;background:#f6f8fb}
+.locked{border-color:#d6e8e1;background:#edf7f3}
+.list,.prize-list-box{border-radius:16px;border-color:#e6e9ee;background:#fcfdff}
+.item{padding:11px 13px}
+.prize-row{padding:12px 13px}
+.prize-name{color:#394052}
+.icon-btn{border:1px solid #f6dfe4;background:#fff4f6}
+.mode-switch{padding:4px;background:#f1f3f7;border:1px solid #ebeef3}
+.mode-btn{border-radius:12px}
+.auto-number-panel{background:linear-gradient(180deg,#f9fbff,#f7f9fd);border-color:#e4e9f2}
+.big-draw{
+  position:relative;overflow:hidden;min-height:280px;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.8),transparent 24%),
+    linear-gradient(145deg,#edf5ff,#fff2f8);
+  border-color:#e7e8ef;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)
+}
+.big-draw::before{content:"✦";position:absolute;right:26px;top:20px;color:#e4b9ce;font-size:22px;opacity:.72}
+.big-draw::after{content:"✧";position:absolute;left:28px;bottom:24px;color:#afc6e6;font-size:19px;opacity:.66}
+.winner{color:#3e4a62;text-shadow:0 2px 0 rgba(255,255,255,.85)}
+.display-modal{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(220,234,255,.72),transparent 28%),
+    linear-gradient(180deg,#f8faff,#f7f7fa)
+}
+.display-head{
+  padding:16px 17px;background:linear-gradient(90deg,rgba(223,236,255,.97),rgba(255,235,245,.96));
+  border-bottom:1px solid rgba(224,227,234,.9);box-shadow:0 7px 24px rgba(64,73,92,.06)
+}
+.display-name{
+  font-size:21px;padding:15px 17px;border-radius:17px;border-color:#e7e9ef;
+  box-shadow:0 5px 15px rgba(60,70,90,.045)
+}
+.full-draw-modal{
+  background:
+    radial-gradient(circle at 50% 8%,rgba(255,255,255,.9),transparent 23%),
+    radial-gradient(circle at 8% 20%,rgba(214,230,255,.7),transparent 28%),
+    radial-gradient(circle at 92% 76%,rgba(252,222,237,.64),transparent 32%),
+    linear-gradient(145deg,#edf5ff 0%,#fff5fa 55%,#f7f8fb 100%)
+}
+.full-top{padding:14px 17px;background:rgba(255,255,255,.7);border-bottom-color:rgba(224,227,234,.84)}
+.full-stage{position:relative;padding:24px 20px 30px}
+.full-stage::before,.full-stage::after{position:absolute;color:#d8b2c7;opacity:.55;pointer-events:none}
+.full-stage::before{content:"✦";top:15%;left:10%;font-size:25px}
+.full-stage::after{content:"✧";right:11%;bottom:19%;font-size:22px;color:#9fb9dc}
+.full-prize{
+  padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.62);
+  border:1px solid rgba(229,232,239,.88);box-shadow:0 5px 16px rgba(72,84,105,.05);
+  font-size:20px;color:#556a85
+}
+.full-progress{margin-top:8px;margin-bottom:30px}
+.full-winner{
+  position:relative;z-index:1;color:#3d4961;
+  text-shadow:0 3px 0 rgba(255,255,255,.8);
+  padding:8px 18px
+}
+.full-winner.multi-winners{
+  font-size:clamp(22px,4.8vw,42px);
+  line-height:1.55;
+  max-width:min(1100px,94vw);
+  max-height:58vh;
+  overflow:auto;
+  align-content:flex-start;
+  flex-wrap:wrap;
+  white-space:normal;
+  word-break:break-word;
+}
+.full-more{
+  padding:8px 16px;border-radius:16px;background:rgba(255,255,255,.36)
+}
+.full-action{background:linear-gradient(135deg,#83a5d9,#7193c7);box-shadow:0 12px 26px rgba(82,105,145,.2)}
+.mini-music-pill{
+  border-color:rgba(255,255,255,.9);background:rgba(255,255,255,.76);
+  box-shadow:0 7px 20px rgba(100,81,110,.09)
+}
+.mini-music-pill.playing{background:linear-gradient(135deg,rgba(255,250,253,.96),rgba(246,250,255,.92));box-shadow:0 8px 22px rgba(187,121,153,.12)}
+.test-music-label{background:rgba(255,255,255,.52)}
+.copy-card{border:1px solid #edf0f4;box-shadow:0 24px 70px rgba(31,37,49,.16)}
+.toast{box-shadow:0 8px 28px rgba(37,43,55,.18)}
+@media(max-width:640px){
+  .wrap{padding:10px 10px 28px}
+  .hero{padding:18px 16px 15px;border-radius:22px}
+  .hero h1{font-size:22px}
+  .hero p{font-size:12.5px}
+  .tabs{margin-top:10px}
+  .tab{padding:9px 11px;font-size:13px}
+  .card{padding:15px;border-radius:19px}
+  .card h2{font-size:18px}
+  .actions button{flex:1 1 auto}
+  .full-prize{font-size:18px}
+  .display-name{font-size:19px;padding:13px 15px}
+}
+
+
+/* ===== 戳戳樂 V31 外殼整合：登入、角色、雙房間 ===== */
+.integration-gate{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(145deg,#edf5ff 0%,#fff4fa 58%,#f7f8fb 100%)}
+.integration-login{width:min(460px,100%);background:#fff;border:1px solid #e7e9ef;border-radius:26px;padding:20px;box-shadow:0 20px 60px rgba(50,60,80,.13)}
+.integration-login h2{margin:0 0 6px}.integration-login .small{line-height:1.65}
+.integration-bar{display:none;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;background:rgba(255,255,255,.82);border:1px solid #e6e9ef;border-radius:18px;box-shadow:var(--shadow-soft);backdrop-filter:blur(10px)}
+.integration-bar.show{display:flex}.integration-left,.integration-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.integration-bar select{width:auto;min-width:112px;padding:9px 10px}.role-chip,.sync-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:750}.role-chip{background:#f7edf6;color:#82627d}.sync-chip{background:#edf5ff;color:#557294}.sync-chip.ok{background:#edf7f3;color:#43705f}.sync-chip.err{background:#fff1f3;color:#a95364}
+@media(max-width:640px){.integration-bar{align-items:stretch}.integration-left,.integration-right{width:100%}.integration-bar select{flex:1}.integration-right{justify-content:space-between}}
+.admin-password-card{display:none;margin:0 0 14px}
+.admin-password-card.show{display:block}
+.admin-password-card .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.admin-password-card .admin-section+ .admin-section{border-top:1px solid #eef0f4;margin-top:18px;padding-top:18px}
+.admin-password-card .admin-msg{min-height:20px;margin-top:9px}
+.admin-password-card .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:640px){.admin-password-card .admin-grid{grid-template-columns:1fr}}
+
+
+/* ===== V29/V30：回到原型的 Dashboard 視覺架構；只調整介面，不更動抽獎／房間邏輯 ===== */
+:root{--dash-blue:#edf5ff;--dash-pink:#fff0f6;--dash-mint:#eefaf7;--dash-border:#e7ebf2}
+body{background:linear-gradient(135deg,#f5f9ff 0%,#fbf9fb 46%,#fff7fa 100%)}
+.wrap{max-width:1480px;margin:0 auto;padding:18px;display:grid;grid-template-columns:228px minmax(0,1fr);gap:18px;align-items:start}
+.integration-bar,.admin-password-card,.hero,.panel{grid-column:2}
+.tabs{grid-column:1;grid-row:1 / span 20;position:sticky;top:18px;display:flex;flex-direction:column;gap:8px;overflow:visible;padding:132px 14px 18px;margin:0;min-height:calc(100vh - 36px);border:1px solid var(--dash-border);border-radius:24px;background:rgba(255,255,255,.91);box-shadow:0 18px 44px rgba(73,88,118,.08);backdrop-filter:blur(14px)}
+.tabs::before{content:"🎁  線上抽獎系統\A Lucky Draw";white-space:pre;position:absolute;left:16px;right:16px;top:22px;padding:15px 12px 17px;border-bottom:1px solid #edf0f5;color:#355273;font-weight:850;font-size:17px;line-height:1.65;letter-spacing:.3px}
+.tab{width:100%;display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:13px 14px;border:1px solid transparent;background:transparent;box-shadow:none;color:#687386;border-radius:14px;text-align:left}
+.tab .nav-ico{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:#f3f6fb;color:#6d87ab;font-size:15px}
+.tab.active{background:linear-gradient(135deg,#e8f2ff,#f2f6ff);color:#385b82;border-color:#dce8f6;box-shadow:none}
+.tab.active .nav-ico{background:#dcecff;color:#527cae}
+.hero{margin:0;padding:20px 22px;border-radius:24px;background:rgba(255,255,255,.82);border:1px solid var(--dash-border);box-shadow:0 14px 36px rgba(68,83,112,.07)}
+.hero::before{width:150px;height:150px;right:-50px;bottom:-86px;background:linear-gradient(135deg,rgba(224,239,255,.55),rgba(255,225,239,.48))}
+.hero .eyebrow{margin-bottom:5px;color:#7b89a0;font-size:12px;font-weight:750;letter-spacing:.12em}
+.hero h1{font-size:28px;color:#334f71;margin-bottom:5px}.hero p{color:#9a7185;font-style:italic;letter-spacing:.03em}
+.integration-bar{margin:0;padding:10px 14px;border-radius:18px;box-shadow:0 8px 24px rgba(68,83,112,.05)}
+.panel.active{margin:0;gap:14px;align-items:start}
+#setup.panel.active{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.75fr)}
+#prizes.panel.active{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr)}
+#history.panel.active{display:grid;grid-template-columns:1fr 1fr}
+#draw.panel.active{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr)}
+#draw .big-draw{grid-column:1;grid-row:1;min-height:520px;margin:0;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.95) 0 18%,transparent 42%),linear-gradient(145deg,#eef6ff 0%,#fff4f8 72%)}
+#draw>.card:not(.big-draw){grid-column:2;grid-row:1;margin:0}
+.card{margin:0;border-radius:20px;border:1px solid var(--dash-border);box-shadow:0 12px 34px rgba(68,83,112,.055);background:rgba(255,255,255,.94)}
+.card h2{display:flex;align-items:center;gap:8px;color:#405a79}
+#setup .card:first-child h2::before{content:"✎";color:#6e91bf}#setup .card:nth-child(2) h2::before{content:"♙";color:#6e91bf}
+#prizes .card:first-child h2::before{content:"♕";color:#d1935e}#history .card:first-child h2::before{content:"♕";color:#d1935e}#history .card:nth-child(2) h2::before{content:"◷";color:#76a9a0}
+.big-draw .winner{font-size:clamp(42px,7vw,76px);color:#3d5878}.big-draw .sub{font-size:15px}
+.prize-row:nth-child(3n+1){background:#f6f9ff}.prize-row:nth-child(3n+2){background:#fff7fa}.prize-row:nth-child(3n){background:#f3fbf8}
+.primary{background:linear-gradient(135deg,#72a4df,#668fca)}.pink{background:linear-gradient(135deg,#ffe9f3,#fbd8e8);color:#a35d7b}.soft{background:#edf5ff;color:#53739b}
+@media(max-width:900px){
+ .wrap{display:block;max-width:900px;padding:10px 10px 30px}
+ .integration-bar,.admin-password-card,.hero,.panel{grid-column:auto}
+ .tabs{position:sticky;top:0;z-index:30;display:flex;flex-direction:row;gap:7px;overflow:auto;min-height:0;padding:7px 2px 9px;margin:9px 0 4px;border:0;border-radius:0;background:rgba(247,249,252,.9);box-shadow:none;backdrop-filter:blur(12px)}
+ .tabs::before{display:none}.tab{width:auto;min-width:max-content;justify-content:center;padding:10px 12px;background:rgba(255,255,255,.92);border-color:#e8ebf1;box-shadow:0 5px 14px rgba(68,83,112,.05)}
+ .tab .nav-ico{width:22px;height:22px}.hero{margin-top:0}
+ #setup.panel.active,#prizes.panel.active,#history.panel.active,#draw.panel.active{display:block}
+ #draw .big-draw,#draw>.card:not(.big-draw){grid-column:auto;grid-row:auto;margin:12px 0}
+ #draw .big-draw{min-height:300px;order:0}
+ .card{margin:12px 0}
+}
+@media(max-width:520px){.tab .nav-ico{display:none}.tab{font-size:13px}.hero h1{font-size:22px}.hero .eyebrow{font-size:11px}}
+
+/* ===== V30：雙房 UI 一致性修正；限制長名單高度，避免 300 人把頁面拉長 ===== */
+#names{height:220px;min-height:220px;max-height:220px;overflow-y:auto;resize:none}
+#nameList{max-height:320px;overflow-y:auto}
+@media(min-width:901px){
+  #setup .card:first-child{min-width:0}
+  #setup .card:nth-child(2){min-width:0}
+  #names{height:240px;min-height:240px;max-height:240px}
+  #nameList{max-height:420px}
+}
+@media(max-width:900px){
+  #names{height:220px;min-height:220px;max-height:220px}
+  #nameList{max-height:300px}
+}
+
+</style>
+
+<!-- 戳戳樂 V31 成熟外殼：Firebase Realtime Database + 背景匿名登入 -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+</head>
+<body>
+<div id="integrationGate" class="integration-gate">
+  <div class="integration-login">
+    <h2>線上抽獎系統</h2>
+    <div class="small" style="margin-bottom:14px">請輸入管理密碼進入抽獎系統。</div>
+    <label>管理密碼</label>
+    <input id="integrationPass" type="password" inputmode="numeric" placeholder="請輸入管理密碼">
+    <div id="integrationPassHint" class="small" style="margin-top:7px">系統會依照管理權限進入可使用的房間。</div>
+    <button class="primary" id="integrationLoginBtn" style="width:100%;margin-top:12px">進入此房間</button>
+    <div id="integrationLoginMsg" class="small" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="wrap">
+<div id="integrationBar" class="integration-bar">
+  <div class="integration-left">
+    <span id="integrationRole" class="role-chip">尚未登入</span>
+    <select id="integrationRoom" aria-label="活動房間">
+      <option value="room1">小寶</option>
+      <option value="room2">甯唲</option>
+    </select>
+    <span id="integrationRoomLabel" class="role-chip" style="display:none">甯唲</span>
+  </div>
+  <div class="integration-right">
+    <span id="integrationSync" class="sync-chip">尚未同步</span>
+    <button id="adminPasswordToggle" class="ghost" type="button" style="display:none;padding:8px 12px">密碼設定</button>
+  </div>
+</div>
+
+<section id="adminPasswordCard" class="card admin-password-card">
+  <h2>🔐 管理員密碼</h2>
+  <div class="small">新密碼會同步到 Firebase；正式網址上的其他裝置會直接使用更新後的密碼。</div>
+  <div class="admin-section" style="margin-top:14px">
+    <label>目前密碼</label>
+    <input id="oldAdminPassword" type="password" autocomplete="current-password" placeholder="輸入目前管理員密碼">
+    <div class="admin-grid" style="margin-top:10px">
+      <div><label>新密碼</label><input id="newAdminPassword" type="password" autocomplete="new-password" placeholder="至少 4 碼"></div>
+      <div><label>再次輸入新密碼</label><input id="newAdminPassword2" type="password" autocomplete="new-password" placeholder="再次輸入新密碼"></div>
+    </div>
+    <div class="admin-actions"><button id="changeAdminPasswordBtn" class="primary" type="button">更新管理員密碼</button></div>
+    <div id="adminPasswordMsg" class="small admin-msg"></div>
+  </div>
+  <div class="admin-section">
+    <h3 style="margin:0 0 6px">👥 共用管理員密碼</h3>
+    <div class="small">供甯唲登入使用；共用管理員看不到這個密碼設定區。</div>
+    <label style="margin-top:10px">新的共用管理員密碼</label>
+    <input id="newSharedAdminPassword" type="password" autocomplete="new-password" placeholder="至少 4 碼">
+    <div class="admin-actions"><button id="changeSharedAdminPasswordBtn" class="soft" type="button">更新共用管理員密碼</button></div>
+    <div id="sharedAdminPasswordMsg" class="small admin-msg"></div>
+  </div>
+</section>
+
+  <section class="hero">
+    <div class="hero-top">
+      <div class="hero-copy">
+        <div class="eyebrow">抽獎活動</div>
+        <h1>🎁 線上抽獎系統</h1>
+        <p>Lucky Draw ・ 名單透明、抽獎可追溯</p>
+      </div>
+      <div class="mini-music-wrap" id="miniMusicWrap">
+        <button class="mini-music-pill" id="musicToggle" type="button" aria-label="播放或暫停背景音樂">
+          <span>🎵</span><span>Music</span><span class="music-heart">♡</span><span class="music-state" id="musicStatus">待機</span>
+        </button>
+      </div>
+    </div>
+    <div class="test-music-loader">
+      <label class="test-music-label" for="musicFile">🎧 測試用｜載入音樂</label>
+      <input id="musicFile" type="file" accept="audio/*">
+    </div>
+  </section>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="setup"><span class="nav-ico">♙</span><span>參加名單</span></button>
+    <button class="tab" data-tab="prizes"><span class="nav-ico">♕</span><span>獎項設定</span></button>
+    <button class="tab" data-tab="draw"><span class="nav-ico">✦</span><span>開始抽獎</span></button>
+    <button class="tab" data-tab="history"><span class="nav-ico">▤</span><span>中獎紀錄</span></button>
+  </div>
+
+  <section id="setup" class="panel active">
+    <div class="card">
+      <h2>抽獎主題</h2>
+      <input id="title" placeholder="例如：8 月會員抽獎" maxlength="60">
+    </div>
+    <div class="card">
+      <h2>參加名單</h2>
+      <div class="small">每行一位，最多 300 人。可手動輸入姓名／編號，或由系統自動產生連續編號。</div>
+
+      <div class="mode-switch" style="margin-top:12px">
+        <button class="mode-btn active" id="manualModeBtn" type="button">手動輸入</button>
+        <button class="mode-btn" id="autoModeBtn" type="button">自動編號</button>
+      </div>
+
+      <div id="autoNumberPanel" class="auto-number-panel" style="display:none">
+        <div class="row">
+          <div>
+            <label>起始編號</label>
+            <input id="startNumber" type="number" min="0" max="999999" value="1">
+          </div>
+          <div>
+            <label>結束編號</label>
+            <input id="endNumber" type="number" min="0" max="999999" value="100">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>編號位數</label>
+            <select id="numberDigits">
+              <option value="0">不補 0（1、2、3…）</option>
+              <option value="2">2 位（01、02、03…）</option>
+              <option value="3">3 位（001、002、003…）</option>
+              <option value="4">4 位（0001、0002…）</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:end">
+            <button class="soft" id="generateNumbers" type="button" style="width:100%">產生編號</button>
+          </div>
+        </div>
+        <div class="small" id="numberHint" style="margin-top:8px">目前設定將產生 100 個編號。</div>
+      </div>
+
+      <textarea id="names" placeholder="王小明&#10;陳小美&#10;林大同"></textarea>
+      <div class="stat"><span>目前人數</span><strong><span id="count">0</span> / 300</strong></div>
+      <div id="dupWarn" class="small" style="margin-top:8px"></div>
+      <div class="actions">
+        <button class="soft" id="previewBtn">更新名單預覽</button>
+        <button class="pink" id="showBtn">名單展示模式</button>
+        <button class="primary" id="lockBtn">鎖定名單</button>
+      </div>
+      <div style="margin-top:10px"><span id="lockBadge" class="badge">🔓 名單未鎖定</span></div>
+    </div>
+    <div class="card">
+      <h3>名單預覽</h3>
+      <div id="nameList" class="list"><div class="item"><span class="sub">尚未輸入名單</span></div></div>
+    </div>
+  </section>
+
+  <section id="prizes" class="panel">
+    <div class="card">
+      <h2>獎項設定</h2>
+      <div class="row">
+        <div><label>獎項名稱</label><input id="prizeName" placeholder="例如：頭獎"></div>
+        <div><label>名額</label><input id="prizeQty" type="number" min="1" max="300" value="1"></div>
+      </div>
+      <div class="actions"><button class="primary" id="addPrize">新增獎項</button></div>
+      <hr>
+      <div id="prizeList"><div class="sub">尚未新增獎項</div></div>
+    </div>
+    <div class="card">
+      <h3>中獎規則</h3>
+      <label>是否允許同一人重複中獎</label>
+      <select id="repeatRule">
+        <option value="no">不允許，已中獎者自動排除</option>
+        <option value="yes">允許重複中獎</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="draw" class="panel">
+    <div class="card">
+      <h2>開始抽獎</h2>
+      <div class="row">
+        <div><label>選擇獎項</label><select id="drawPrize"></select></div>
+        <div><label>本次手動抽出人數</label><input id="drawQty" type="number" min="1" value="1"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="drawBtn">開始抽獎</button>
+        <button class="pink" id="fullDrawBtn">全螢幕抽獎模式</button>
+        <button class="ghost" id="resetDraw">清空全部抽獎結果</button>
+      </div>
+      <hr>
+      <h3>全部獎項一次抽</h3>
+      <div class="small">按一次後，系統會依獎項順序自動逐項開獎；每個獎項完成後會短暫停留再進入下一項；單一獎項超過 40 名時停留 5 秒，其餘停留 3 秒。</div>
+      <div class="actions">
+        <button class="primary" id="drawAllBtn">開始全部獎項自動抽獎</button>
+      </div>
+    </div>
+    <div class="card big-draw">
+      <div>
+        <div class="sub" id="drawLabel">等待抽獎</div>
+        <div class="winner" id="winnerText">—</div>
+        <div class="sub" id="winnerMore"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="history" class="panel">
+    <div class="card">
+      <h2>本期中獎紀錄</h2>
+      <div id="historyList"><div class="sub">目前沒有抽獎紀錄</div></div>
+      <div class="actions">
+        <button class="soft" id="copyResults">複製結果</button>
+        <button class="pink" id="exportCsv">匯出 CSV</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>最近 3 期</h2>
+      <div class="small" style="margin-bottom:12px">完成整期抽獎後自動保存；第 4 期建立時會自動刪除最舊一期。</div>
+      <div id="periodHistoryList"><div class="sub">目前沒有已完成期別</div></div>
+    </div>
+  </section>
+</div>
+
+
+<div class="full-draw-modal" id="fullDrawModal">
+  <div class="full-top">
+    <div>
+      <div class="small">線上抽獎</div>
+      <strong id="fullTitle">抽獎活動</strong>
+    </div>
+    <button class="ghost" id="closeFullDraw">退出</button>
+  </div>
+  <div class="full-stage">
+    <div class="full-prize" id="fullPrize">請選擇獎項</div>
+    <div class="full-progress" id="fullProgress">已抽 0 / 0 名</div>
+    <div class="full-progress" id="fullOverallProgress"></div>
+    <div class="full-winner" id="fullWinner">準備抽獎</div>
+    <div class="full-more" id="fullMore"></div>
+    <button class="full-action" id="fullAction">開始抽獎</button>
+  </div>
+</div>
+
+<div class="display-modal" id="displayModal">
+  <div class="display-head">
+    <div>
+      <strong id="displayTitle">完整參加名單</strong>
+      <div class="small" id="displayCount"></div>
+    </div>
+    <div class="display-controls">
+      <select id="scrollSpeed" aria-label="名單捲動速度">
+        <option value="slow">慢（約 60 秒）</option>
+        <option value="normal" selected>標準（約 40 秒）</option>
+        <option value="fast">快（約 25 秒）</option>
+      </select>
+      <button class="ghost" id="pauseDisplay">暫停</button>
+      <button class="ghost" id="closeDisplay">關閉</button>
+    </div>
+  </div>
+  <div class="display-list" id="displayList"></div>
+</div>
+
+<div class="copy-modal" id="copyModal">
+  <div class="copy-card">
+    <h3>抽獎結果文字</h3>
+    <div class="small" id="copyHint" style="margin-bottom:10px">若瀏覽器限制自動複製，可在這裡全選後手動複製。</div>
+    <textarea id="copyText" readonly></textarea>
+    <div class="actions">
+      <button class="ghost" id="selectCopyText">全選文字</button>
+      <button class="primary" id="copyAgain">複製</button>
+      <button class="soft" id="closeCopyModal">關閉</button>
+    </div>
+  </div>
+</div>
+<audio id="bgMusic" loop preload="metadata"></audio>
+<div class="toast" id="toast"></div>
+
+<script>
+const S = {names:[], locked:false, prizes:[], history:[], currentPeriodSaved:false};
+const PERIOD_STORAGE_KEY="luckyDrawRecentPeriodsV1"; // 舊版全域紀錄保留但 V24 不再讀取，避免兩房混用
+let savedPeriods=[];
+
+
+/* ===== V25：沿用戳戳樂 V31 的雙房間模式＋修正登入房間分流 =====
+   原則：activeEnv + 每房獨立 Firebase path + 切房時解除舊監聽再綁新監聽。
+   這一版先忠實沿用戳戳樂最終版房間行為；額外的權限隱藏／無痕存取之後再處理。
+*/
+const LD_FIREBASE_CONFIG={
+  apiKey:"AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",
+  authDomain:"mole-game-3073f.firebaseapp.com",
+  databaseURL:"https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"mole-game-3073f",
+  storageBucket:"mole-game-3073f.firebasestorage.app",
+  messagingSenderId:"942915688837",
+  appId:"1:942915688837:web:4e6584ad32100b2cc24cec"
+};
+if(!firebase.apps.length) firebase.initializeApp(LD_FIREBASE_CONFIG);
+const ldDb=firebase.database();
+const ldAuth=firebase.auth();
+const LD_ROOT="luckyDrawV1/main";
+const LD_ADMIN_CONFIG_REF=ldDb.ref("pokePartyV3/main/adminConfig");
+
+let ldRole="";
+let activeEnv=null;
+let roomStateRef=ldDb.ref(LD_ROOT+"/room1/state");
+let roomRealtimeBound=false;
+let ldLoading=false;
+let ldSaveTimer=null;
+let ldPeriodNo=1;
+
+function ldSetSync(text,state=""){
+  const el=document.getElementById('integrationSync'); if(!el)return;
+  el.textContent=text; el.className='sync-chip'+(state?' '+state:'');
+}
+
+let ldAuthReadyPromise=null;
+function ldEnsureAuth(){
+  if(ldAuth.currentUser) return Promise.resolve(ldAuth.currentUser);
+  if(ldAuthReadyPromise) return ldAuthReadyPromise;
+  ldAuthReadyPromise=ldAuth.signInAnonymously()
+    .then(result=>result.user)
+    .catch(err=>{ldAuthReadyPromise=null;throw err;});
+  return ldAuthReadyPromise;
+}
+ldEnsureAuth().catch(err=>console.error('Firebase 匿名登入失敗',err));
+
+function ldSnapshotState(){
+  return {
+    title:(document.getElementById('title')?.value||'').trim(),
+    names:[...S.names],
+    locked:!!S.locked,
+    prizes:S.prizes.map(p=>({id:p.id||Date.now()+Math.random(),name:p.name,qty:Number(p.qty)||1})),
+    drawHistory:S.history.map(h=>({time:h.time,prize:h.prize,winners:[...(h.winners||[])]})),
+    repeatRule:document.getElementById('repeatRule')?.value||'no',
+    currentPeriodSaved:!!S.currentPeriodSaved,
+    savedPeriods:savedPeriods.slice(0,3),
+    periodNo:ldPeriodNo,
+    updatedAt:Date.now()
+  };
+}
+
+/* content:// 測試仍需本機 fallback，但資料結構完全依 room1 / room2 分開。 */
+const LD_LOCAL_ROOM_PREFIX='luckyDrawV24:';
+function ldIsLocalTest(){return location.protocol==='content:' || location.protocol==='file:';}
+function ldLocalKey(env){return LD_LOCAL_ROOM_PREFIX+env+'/state';}
+function ldReadLocal(env){
+  try{const raw=localStorage.getItem(ldLocalKey(env));return raw?JSON.parse(raw):null;}catch(e){return null;}
+}
+function ldWriteLocal(env,state){localStorage.setItem(ldLocalKey(env),JSON.stringify(state));}
+
+function ldApplyRoomState(g){
+  S.names=Array.isArray(g?.names)?g.names:[];
+  S.locked=!!g?.locked;
+  S.prizes=Array.isArray(g?.prizes)?g.prizes:[];
+  S.history=Array.isArray(g?.drawHistory)?g.drawHistory:[];
+  S.currentPeriodSaved=!!g?.currentPeriodSaved;
+  savedPeriods=Array.isArray(g?.savedPeriods)?g.savedPeriods.slice(0,3):[];
+  ldPeriodNo=Math.max(1,Number(g?.periodNo)||1);
+  const titleEl=document.getElementById('title'); if(titleEl) titleEl.value=g?.title||'';
+  const namesEl=document.getElementById('names'); if(namesEl) namesEl.value=S.names.join('\n');
+  const repeatEl=document.getElementById('repeatRule'); if(repeatEl) repeatEl.value=g?.repeatRule||'no';
+  /* V30：切換／載入任何房間後，都立即重建名單預覽，避免 room1 / room2 畫面狀態不同。 */
+  if(typeof renderNames==='function') renderNames();
+  else if(typeof updateCount==='function') updateCount();
+  if(typeof renderPrizes==='function') renderPrizes();
+  if(typeof renderHistory==='function') renderHistory();
+  if(typeof renderPeriodHistory==='function') renderPeriodHistory();
+  const lockBtn=document.getElementById('lockBtn'), lockBadge=document.getElementById('lockBadge');
+  if(namesEl) namesEl.disabled=S.locked;
+  if(lockBtn) lockBtn.textContent=S.locked?'解除鎖定':'鎖定名單';
+  if(lockBadge){
+    lockBadge.textContent=S.locked?'🔒 名單已鎖定':'🔓 名單未鎖定';
+    lockBadge.classList.toggle('locked',S.locked);
+  }
+  /* V26：不要讓房間載入層改寫 V17 的名單模式按鈕狀態。
+     V17 原本允許手動／自動模式正常切換；真正產生編號時再由 generateNumbers 依 S.locked 阻擋。 */
+  document.querySelectorAll('#manualModeBtn,#autoModeBtn,#generateNumbers').forEach(x=>x.disabled=false);
+  const wt=document.getElementById('winnerText'), wm=document.getElementById('winnerMore'), dl=document.getElementById('drawLabel');
+  if(wt) wt.textContent='—'; if(wm) wm.textContent=''; if(dl) dl.textContent='等待抽獎';
+}
+
+function handleLuckyRoomValue(snap){
+  if(ldLoading) return;
+  const g=snap?.val ? snap.val() : snap;
+  ldApplyRoomState(g);
+  ldSetSync(g?'已同步':'新房間','ok');
+}
+
+function unbindLuckyRealtime(){
+  if(roomRealtimeBound){
+    try{roomStateRef.off('value',handleLuckyRoomValue);}catch(e){}
+    roomRealtimeBound=false;
+  }
+}
+function bindLuckyRealtime(){
+  if(ldIsLocalTest() || roomRealtimeBound) return;
+  roomStateRef.on('value',handleLuckyRoomValue);
+  roomRealtimeBound=true;
+}
+
+async function ldSaveNow(){
+  if(ldLoading||!ldRole) return;
+  clearTimeout(ldSaveTimer);
+  const envAtSave=activeEnv;
+  const state=ldSnapshotState();
+  ldSetSync('同步中…');
+  try{
+    if(ldIsLocalTest()) ldWriteLocal(envAtSave,state);
+    else{
+      await ldEnsureAuth();
+      await ldDb.ref(LD_ROOT+'/'+envAtSave+'/state').set({...state,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+    }
+    if(envAtSave===activeEnv) ldSetSync('已同步','ok');
+  }catch(e){console.error(e); if(envAtSave===activeEnv) ldSetSync('同步失敗','err');}
+}
+function ldScheduleSave(delay=450){
+  if(ldLoading||!ldRole)return;
+  clearTimeout(ldSaveTimer);
+  const envAtSchedule=activeEnv;
+  ldSetSync('同步中…');
+  ldSaveTimer=setTimeout(async()=>{
+    if(envAtSchedule!==activeEnv) return;
+    await ldSaveNow();
+  },delay);
+}
+
+/* 直接比照戳戳樂 setActivityEnv：解除舊房監聽 -> 改 activeEnv/ref -> 載入新房 -> 綁新房監聽。 */
+async function setActivityEnv(env,force=false){
+  const nextEnv=(env==='room2')?'room2':'room1';
+  /* V27 權限防線：共享管理員（甯唲）只能進 room2。
+     不只限制下拉選單，也在真正切房函式阻擋，避免任何程式路徑誤切到 room1。 */
+  if(ldRole==='shared' && nextEnv!=='room2'){
+    const sel=document.getElementById('integrationRoom');
+    if(sel) sel.value='room2';
+    ldSetSync('無此房間權限','err');
+    return;
+  }
+  if(!force && nextEnv===activeEnv && !ldLoading){
+    const sel=document.getElementById('integrationRoom'); if(sel) sel.value=nextEnv;
+    return;
+  }
+  if(ldRole) await ldSaveNow();
+  unbindLuckyRealtime();
+  clearTimeout(ldSaveTimer);
+  ldLoading=true;
+  ldSetSync('載入房間…');
+  try{
+    activeEnv=nextEnv;
+    roomStateRef=ldDb.ref(LD_ROOT+'/'+activeEnv+'/state');
+    const sel=document.getElementById('integrationRoom'); if(sel) sel.value=activeEnv;
+
+    /* 切房當下先清空畫面，避免上一房殘影。 */
+    ldApplyRoomState(null);
+
+    let g=null;
+    if(ldIsLocalTest()) g=ldReadLocal(activeEnv);
+    else{
+      await ldEnsureAuth();
+      g=(await roomStateRef.once('value')).val();
+    }
+    ldApplyRoomState(g);
+    ldSetSync(g?'已載入':'新房間','ok');
+  }catch(e){
+    console.error(e); ldSetSync('載入失敗','err'); alert('房間資料載入失敗：'+e.message);
+  }finally{
+    ldLoading=false;
+    bindLuckyRealtime();
+  }
+}
+
+/* V27 房間權限：主管理員可使用 room1/room2；共享管理員只能使用 room2。 */
+const LD_LOCAL_OWNER_PASS='2468';
+const LD_LOCAL_SHARED_PASS='1357';
+const LD_LOCAL_OWNER_PASS_KEY='luckyDrawAdminOwnerPassV1';
+const LD_LOCAL_SHARED_PASS_KEY='luckyDrawAdminSharedPassV1';
+function ldGetLocalOwnerPass(){return localStorage.getItem(LD_LOCAL_OWNER_PASS_KEY)||LD_LOCAL_OWNER_PASS;}
+function ldGetLocalSharedPass(){return localStorage.getItem(LD_LOCAL_SHARED_PASS_KEY)||LD_LOCAL_SHARED_PASS;}
+async function ldSha256(text){
+  const data=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function ldEnsureAdminConfig(){
+  const snap=await LD_ADMIN_CONFIG_REF.once('value');
+  const cfg=snap.val()||{};
+  if(!cfg.passwordHash){cfg.passwordHash=await ldSha256(LD_LOCAL_OWNER_PASS);await LD_ADMIN_CONFIG_REF.child('passwordHash').set(cfg.passwordHash);}
+  if(!cfg.sharedPasswordHash){cfg.sharedPasswordHash=await ldSha256(LD_LOCAL_SHARED_PASS);await LD_ADMIN_CONFIG_REF.child('sharedPasswordHash').set(cfg.sharedPasswordHash);}
+  return cfg;
+}
+async function ldLogin(){
+  const pass=document.getElementById('integrationPass').value;
+  const msg=document.getElementById('integrationLoginMsg');
+  if(!pass){msg.textContent='請輸入管理密碼。';return;}
+  msg.textContent='驗證中…';
+
+  let isOwner=false,isShared=false;
+  if(ldIsLocalTest()){
+    isOwner=pass===ldGetLocalOwnerPass();
+    isShared=pass===ldGetLocalSharedPass();
+  }else{
+    try{
+      const cfg=await ldEnsureAdminConfig();
+      const enteredHash=await ldSha256(pass);
+      isOwner=enteredHash===cfg.passwordHash;
+      isShared=enteredHash===cfg.sharedPasswordHash;
+    }catch(e){msg.textContent='管理員驗證連線失敗。';return;}
+  }
+  if(!isOwner && !isShared){msg.textContent='管理密碼不正確。';return;}
+
+  ldRole=isOwner?'owner':'shared';
+  document.getElementById('integrationGate').style.display='none';
+  document.getElementById('integrationBar').classList.add('show');
+  document.getElementById('integrationRole').textContent=isOwner?'👑 主管理員':'🔑 管理員';
+  const adminPasswordToggle=document.getElementById('adminPasswordToggle');
+  const adminPasswordCard=document.getElementById('adminPasswordCard');
+  if(adminPasswordToggle) adminPasswordToggle.style.display=isOwner?'':'none';
+  if(adminPasswordCard) adminPasswordCard.classList.remove('show');
+  const roomSel=document.getElementById('integrationRoom');
+  const roomLabel=document.getElementById('integrationRoomLabel');
+  if(isOwner){
+    /* 主管理員可切換小寶／甯唲兩房。 */
+    roomSel.innerHTML='<option value="room1">小寶</option><option value="room2">甯唲</option>';
+    roomSel.style.display='';
+    roomLabel.style.display='none';
+  }else{
+    /* 共享管理員只屬於甯唲房：不提供房間切換入口。 */
+    roomSel.innerHTML='<option value="room2">甯唲</option>';
+    roomSel.value='room2';
+    roomSel.style.display='none';
+    roomLabel.textContent='甯唲';
+    roomLabel.style.display='';
+  }
+  await setActivityEnv(isOwner?'room1':'room2',true);
+}
+
+async function changeAdminPassword(){
+  if(ldRole!=='owner'){alert('共用管理員無權限修改主管理員密碼。');return;}
+  const oldP=(document.getElementById('oldAdminPassword')?.value||'').trim();
+  const newP=(document.getElementById('newAdminPassword')?.value||'').trim();
+  const newP2=(document.getElementById('newAdminPassword2')?.value||'').trim();
+  const msg=document.getElementById('adminPasswordMsg');
+  if(!oldP){msg.textContent='請輸入目前密碼。';return;}
+  if(newP.length<4){msg.textContent='新密碼至少需要 4 碼。';return;}
+  if(newP!==newP2){msg.textContent='兩次輸入的新密碼不同。';return;}
+  const current=ldIsLocalTest()?ldGetLocalOwnerPass():null;
+  if(ldIsLocalTest() && oldP!==current){msg.textContent='目前密碼不正確。';return;}
+  try{
+    if(ldIsLocalTest()) localStorage.setItem(LD_LOCAL_OWNER_PASS_KEY,newP);
+    else{
+      await ldEnsureAuth();
+      const cfg=await ldEnsureAdminConfig();
+      const oldHash=await ldSha256(oldP);
+      if(oldHash!==cfg.passwordHash){msg.textContent='目前密碼不正確。';return;}
+      const newHash=await ldSha256(newP);
+      await LD_ADMIN_CONFIG_REF.child('passwordHash').set(newHash);
+      await LD_ADMIN_CONFIG_REF.child('updatedAt').set(firebase.database.ServerValue.TIMESTAMP);
+    }
+    if(ldIsLocalTest()){
+      /* 本機 content:// 先讓測試密碼立即生效；同時背景嘗試同步 Firebase，不阻塞本機測試。 */
+      (async()=>{try{await ldEnsureAuth();const cfg=await ldEnsureAdminConfig();const oldHash=await ldSha256(oldP);if(oldHash===cfg.passwordHash){await LD_ADMIN_CONFIG_REF.child('passwordHash').set(await ldSha256(newP));await LD_ADMIN_CONFIG_REF.child('updatedAt').set(firebase.database.ServerValue.TIMESTAMP);}}catch(e){console.warn('本機密碼 Firebase 同步略過',e);}})();
+    }
+    msg.textContent=ldIsLocalTest()?'管理員密碼已更新；本機測試已立即生效，Firebase 會在連線允許時同步。':'管理員密碼已更新，其他裝置會使用新密碼。';
+    ['oldAdminPassword','newAdminPassword','newAdminPassword2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }catch(e){msg.textContent='更新失敗：'+e.message;}
+}
+
+async function changeSharedAdminPassword(){
+  if(ldRole!=='owner'){alert('只有主管理員可以修改共用管理員密碼。');return;}
+  const p=(document.getElementById('newSharedAdminPassword')?.value||'').trim();
+  const msg=document.getElementById('sharedAdminPasswordMsg');
+  if(p.length<4){msg.textContent='共用管理員密碼至少需要 4 碼。';return;}
+  try{
+    if(ldIsLocalTest()) localStorage.setItem(LD_LOCAL_SHARED_PASS_KEY,p);
+    else{await ldEnsureAuth();await LD_ADMIN_CONFIG_REF.child('sharedPasswordHash').set(await ldSha256(p));await LD_ADMIN_CONFIG_REF.child('updatedAt').set(firebase.database.ServerValue.TIMESTAMP);}
+    if(ldIsLocalTest()){
+      (async()=>{try{await ldEnsureAuth();await ldEnsureAdminConfig();await LD_ADMIN_CONFIG_REF.child('sharedPasswordHash').set(await ldSha256(p));await LD_ADMIN_CONFIG_REF.child('updatedAt').set(firebase.database.ServerValue.TIMESTAMP);}catch(e){console.warn('本機共用密碼 Firebase 同步略過',e);}})();
+    }
+    msg.textContent=ldIsLocalTest()?'共用管理員密碼已更新；本機測試已立即生效，Firebase 會在連線允許時同步。':'共用管理員密碼已更新。';
+    document.getElementById('newSharedAdminPassword').value='';
+  }catch(e){msg.textContent='更新失敗：'+e.message;}
+}
+
+function loadSavedPeriods(){ return []; }
+function persistSavedPeriods(){
+  /* V24 最近 3 期跟著 activeEnv 對應房間 state 儲存。 */
+  ldScheduleSave(80);
+}
+function isWholePeriodComplete(){
+  return S.prizes.length>0 && S.prizes.every(p=>prizeDrawnCount(p.name)>=p.qty);
+}
+function saveCompletedPeriodIfNeeded(){
+  if(S.currentPeriodSaved || !isWholePeriodComplete() || !S.history.length) return;
+  const completedAt=S.history[S.history.length-1].time;
+  const period={
+    id:Date.now(),
+    title:(document.getElementById('title').value||'抽獎活動').trim(),
+    completedAt,
+    participantCount:S.names.length,
+    repeatRule:document.getElementById('repeatRule').value,
+    prizes:S.prizes.map(p=>({name:p.name,qty:p.qty})),
+    history:S.history.map(h=>({time:h.time,prize:h.prize,winners:[...h.winners]}))
+  };
+  savedPeriods.unshift(period);
+  savedPeriods=savedPeriods.slice(0,3);
+  persistSavedPeriods();
+  S.currentPeriodSaved=true;
+  renderPeriodHistory();
+}
+function renderPeriodHistory(){
+  const el=document.getElementById('periodHistoryList');
+  if(!el) return;
+  if(!savedPeriods.length){ el.innerHTML='<div class="sub">目前沒有已完成期別</div>'; return; }
+  el.innerHTML=savedPeriods.map((p,i)=>{
+    const totalWinners=(p.history||[]).reduce((sum,h)=>sum+(h.winners||[]).length,0);
+    const detail=(p.history||[]).map(h=>`<div style="margin-top:8px"><strong>${esc(h.prize)}</strong><div class="small">${(h.winners||[]).map(esc).join('、')}</div></div>`).join('');
+    return `<details class="prize"><summary><strong>${esc(p.title)}</strong> <span class="small">｜${esc(p.completedAt||'')}｜${p.participantCount||0} 人｜中獎 ${totalWinners} 名</span></summary>${detail}</details>`;
+  }).join('');
+}
+
+function cleanNames(){
+  return document.getElementById('names').value.split(/\n/).map(x=>x.trim()).filter(Boolean).slice(0,300);
+}
+function updateCount(){
+  const arr=cleanNames(); document.getElementById('count').textContent=arr.length;
+  const map={}; arr.forEach(n=>map[n]=(map[n]||0)+1);
+  const d=Object.entries(map).filter(([n,c])=>c>1);
+  document.getElementById('dupWarn').textContent=d.length ? `⚠️ 發現重複姓名：${d.map(([n,c])=>`${n} ×${c}`).join('、')}` : '';
+}
+function renderNames(){
+  const arr=cleanNames(); S.names=arr;
+  document.getElementById('nameList').innerHTML=arr.length?arr.map((n,i)=>`<div class="item"><span>${i+1}. ${esc(n)}</span></div>`).join(''):'<div class="item"><span class="sub">尚未輸入名單</span></div>';
+  updateCount();
+}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+document.getElementById('names').addEventListener('input',updateCount);
+document.getElementById('previewBtn').onclick=renderNames;
+
+document.getElementById('lockBtn').onclick=()=>{
+  if(!S.locked){
+    renderNames();
+    if(!S.names.length) return alert('請先輸入參加名單。');
+    S.locked=true; document.getElementById('names').disabled=true;
+    document.getElementById('lockBtn').textContent='解除鎖定';
+    const b=document.getElementById('lockBadge'); b.className='badge locked'; b.textContent=`🔒 名單已鎖定｜共 ${S.names.length} 人`;
+  } else {
+    if(S.history.length && !confirm('解除鎖定會清空全部抽獎紀錄，確定嗎？')) return;
+    S.locked=false; S.history=[]; S.currentPeriodSaved=false;
+    document.getElementById('names').disabled=false;
+    document.getElementById('lockBtn').textContent='鎖定名單';
+    const b=document.getElementById('lockBadge'); b.className='badge'; b.textContent='🔓 名單未鎖定';
+    renderHistory();
+  }
+};
+
+let displayAnimation=null;
+let displayPaused=false;
+
+function stopDisplayScroll(){
+  if(displayAnimation){
+    displayAnimation.cancel();
+    displayAnimation=null;
+  }
+  displayPaused=false;
+  const inner=document.getElementById('displayInner');
+  if(inner) inner.style.transform='translateY(0px)';
+}
+
+function getScrollDuration(){
+  const v=document.getElementById('scrollSpeed').value;
+  if(v==='slow') return 60000;
+  if(v==='fast') return 25000;
+  return 40000;
+}
+
+function startDisplayScroll(){
+  const box=document.getElementById('displayList');
+  const inner=document.getElementById('displayInner');
+  if(!inner) return;
+
+  if(displayAnimation) displayAnimation.cancel();
+
+  const distance=Math.max(0, inner.scrollHeight - box.clientHeight + 8);
+  if(distance<=0){
+    document.getElementById('pauseDisplay').textContent='已到底';
+    return;
+  }
+
+  inner.style.transform='translateY(0px)';
+  displayPaused=false;
+  document.getElementById('pauseDisplay').textContent='暫停';
+
+  displayAnimation=inner.animate(
+    [
+      {transform:'translateY(0px)'},
+      {transform:`translateY(-${distance}px)`}
+    ],
+    {
+      duration:getScrollDuration(),
+      easing:'linear',
+      fill:'forwards'
+    }
+  );
+
+  displayAnimation.onfinish=()=>{
+    document.getElementById('pauseDisplay').textContent='重新播放';
+  };
+}
+
+document.getElementById('showBtn').onclick=()=>{
+  renderNames();
+  if(!S.names.length)return alert('請先輸入參加名單。');
+  document.getElementById('displayTitle').textContent=document.getElementById('title').value||'完整參加名單';
+  document.getElementById('displayCount').textContent=`參加總人數：${S.names.length} 人`;
+  document.getElementById('displayList').innerHTML=`<div id="displayInner">${S.names.map((n,i)=>`<div class="display-name">${i+1}. ${esc(n)}</div>`).join('')}</div>`;
+  const modal=document.getElementById('displayModal');
+  modal.classList.add('show');
+  setTimeout(startDisplayScroll,120);
+};
+
+document.getElementById('pauseDisplay').onclick=()=>{
+  if(!displayAnimation){
+    startDisplayScroll();
+    return;
+  }
+  if(displayAnimation.playState==='finished'){
+    startDisplayScroll();
+    return;
+  }
+  if(displayPaused){
+    displayAnimation.play();
+    displayPaused=false;
+    document.getElementById('pauseDisplay').textContent='暫停';
+  }else{
+    displayAnimation.pause();
+    displayPaused=true;
+    document.getElementById('pauseDisplay').textContent='繼續';
+  }
+};
+
+document.getElementById('scrollSpeed').addEventListener('change',()=>{
+  if(!document.getElementById('displayModal').classList.contains('show')) return;
+  startDisplayScroll();
+});
+
+document.getElementById('closeDisplay').onclick=()=>{
+  if(displayAnimation){ displayAnimation.cancel(); displayAnimation=null; }
+  document.getElementById('displayModal').classList.remove('show');
+};
+
+document.getElementById('addPrize').onclick=()=>{
+  const name=document.getElementById('prizeName').value.trim();
+  const qty=Math.max(1,Math.min(300,Number(document.getElementById('prizeQty').value)||1));
+  if(!name)return alert('請輸入獎項名稱。');
+  S.prizes.push({id:Date.now()+Math.random(),name,qty});
+  document.getElementById('prizeName').value=''; renderPrizes();
+};
+function renderPrizes(){
+  const el=document.getElementById('prizeList');
+  if(S.prizes.length){
+    el.innerHTML=`<div class="prize-list-box">`+S.prizes.map((p,i)=>`
+      <div class="prize-row">
+        <div class="prize-name" title="${esc(p.name)}">${esc(p.name)}</div>
+        <div class="prize-meta">名額 ${p.qty} 人</div>
+        <button class="icon-btn" onclick="delPrize(${i})" aria-label="刪除 ${esc(p.name)}">×</button>
+      </div>`).join('')+`</div>`;
+  }else{
+    el.innerHTML='<div class="sub">尚未新增獎項</div>';
+  }
+  const sel=document.getElementById('drawPrize');
+  sel.innerHTML=S.prizes.length?S.prizes.map((p,i)=>`<option value="${i}">${esc(p.name)}（${p.qty}名）</option>`).join(''):'<option>尚未設定獎項</option>';
+}
+window.delPrize=(i)=>{S.prizes.splice(i,1);renderPrizes()};
+
+function randPick(arr,n){
+  const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a.slice(0,n);
+}
+document.getElementById('drawBtn').onclick=()=>{
+  ensureAudioContext();
+  if(!S.locked)return alert('為了公平性，請先鎖定參加名單。');
+  if(!S.prizes.length)return alert('請先新增獎項。');
+  const pi=Number(document.getElementById('drawPrize').value), prize=S.prizes[pi];
+  const qty=Math.max(1,Number(document.getElementById('drawQty').value)||1);
+  const already=S.history.flatMap(h=>h.winners);
+  let pool=document.getElementById('repeatRule').value==='yes'?S.names:S.names.filter(n=>!already.includes(n));
+  if(pool.length<qty)return alert(`可抽人數不足，目前只剩 ${pool.length} 人。`);
+  const w=randPick(pool,qty);
+  const label=document.getElementById('drawLabel'), text=document.getElementById('winnerText'), more=document.getElementById('winnerMore');
+  label.textContent=`${prize.name} 抽獎中…`; more.textContent='';
+  let ticks=0; const anim=setInterval(()=>{
+    text.textContent=pool[Math.floor(Math.random()*pool.length)]||'—';
+    if(++ticks>22){clearInterval(anim); text.textContent=w[0]; more.textContent=w.length>1?`其餘中獎者：${w.slice(1).join('、')}`:''; label.textContent=`🎉 ${prize.name}`;
+      playRevealChime();
+      S.history.push({time:new Date().toLocaleString('zh-TW',{hour12:false}),prize:prize.name,winners:w});
+      renderHistory();
+      saveCompletedPeriodIfNeeded();
+    }
+  },70);
+};
+function renderHistory(){
+  const el=document.getElementById('historyList');
+  el.innerHTML=S.history.length?S.history.map((h,i)=>`<div class="prize"><strong>${i+1}. ${esc(h.prize)}</strong><div>${h.winners.map(esc).join('、')}</div><div class="small">${h.time}</div></div>`).join(''):'<div class="sub">目前沒有抽獎紀錄</div>';
+}
+document.getElementById('resetDraw').onclick=()=>{if(confirm('確定清空全部抽獎結果？')){S.history=[];S.currentPeriodSaved=false;renderHistory();document.getElementById('winnerText').textContent='—';document.getElementById('winnerMore').textContent='';document.getElementById('drawLabel').textContent='等待抽獎';}};
+function groupedResultText(){
+  const groups=new Map();
+  S.history.forEach(h=>{
+    if(!groups.has(h.prize)) groups.set(h.prize,[]);
+    groups.get(h.prize).push(...h.winners);
+  });
+  const title=(document.getElementById('title').value||'抽獎活動').trim();
+  const parts=[`🎁 ${title} 抽獎結果`,''];
+  groups.forEach((winners,prize)=>{
+    parts.push(`【${prize}】`);
+    winners.forEach((w,i)=>parts.push(`${i+1}. ${w}`));
+    parts.push('');
+  });
+  parts.push(`參加人數：${S.names.length}人`);
+  if(S.history.length) parts.push(`抽獎時間：${S.history[S.history.length-1].time}`);
+  return parts.join('\n');
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(showToast.timer);
+  showToast.timer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+function selectCopyText(){
+  const x=document.getElementById('copyText');
+  x.focus(); x.select(); x.setSelectionRange(0,x.value.length);
+}
+function showCopyModal(text){
+  document.getElementById('copyText').value=text;
+  document.getElementById('copyHint').textContent='瀏覽器限制自動複製，文字已全選；長按文字後選「複製」即可。';
+  document.getElementById('copyModal').classList.add('show');
+  setTimeout(selectCopyText,80);
+}
+async function tryCopy(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){ return false; }
+}
+document.getElementById('copyResults').onclick=async()=>{
+  if(!S.history.length)return alert('目前沒有結果。');
+  const t=groupedResultText();
+  if(await tryCopy(t)) showToast('結果已複製');
+  else showCopyModal(t);
+};
+document.getElementById('selectCopyText').onclick=selectCopyText;
+document.getElementById('copyAgain').onclick=async()=>{
+  const x=document.getElementById('copyText');
+  if(await tryCopy(x.value)){
+    showToast('結果已複製');
+    document.getElementById('copyModal').classList.remove('show');
+  } else {
+    selectCopyText();
+    document.getElementById('copyHint').textContent='這台手機目前不允許網頁直接寫入剪貼簿。文字已全選，長按後選「複製」即可。';
+  }
+};
+document.getElementById('closeCopyModal').onclick=()=>document.getElementById('copyModal').classList.remove('show');
+
+// 背景音樂：測試版將「載入音樂」與可愛 Music 小框分離。
+// 載入檔案只做一次；Music 小框永遠只負責播放 / 暫停。正式部署時會直接指定網站內的 MP3，移除測試載入入口。
+const bgMusic=document.getElementById('bgMusic');
+const musicToggle=document.getElementById('musicToggle');
+const musicStatus=document.getElementById('musicStatus');
+const musicFile=document.getElementById('musicFile');
+const miniMusicWrap=document.getElementById('miniMusicWrap');
+let musicObjectUrl='';
+let noteTimer=null;
+bgMusic.volume=.52;
+
+function spawnMusicNote(){
+  if(bgMusic.paused) return;
+  const note=document.createElement('span');
+  note.className='floating-note';
+  note.textContent=['♪','♫','♩'][Math.floor(Math.random()*3)];
+  note.style.setProperty('--drift',`${Math.round(Math.random()*20-10)}px`);
+  note.style.right=`${8+Math.round(Math.random()*18)}px`;
+  miniMusicWrap.appendChild(note);
+  setTimeout(()=>note.remove(),2400);
+}
+function scheduleMusicNotes(){
+  clearTimeout(noteTimer);
+  if(bgMusic.paused) return;
+  noteTimer=setTimeout(()=>{
+    spawnMusicNote();
+    if(Math.random()>.55) setTimeout(spawnMusicNote,260);
+    scheduleMusicNotes();
+  },1800+Math.random()*1800);
+}
+function syncMusicUI(){
+  const loaded=!!bgMusic.src;
+  const playing=loaded&&!bgMusic.paused;
+  musicToggle.classList.toggle('playing',playing);
+  musicStatus.textContent=!loaded?'待機':playing?'播放中':'已就緒';
+  if(playing) scheduleMusicNotes(); else clearTimeout(noteTimer);
+}
+
+musicFile.onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  if(musicObjectUrl) URL.revokeObjectURL(musicObjectUrl);
+  musicObjectUrl=URL.createObjectURL(f);
+  bgMusic.pause();
+  bgMusic.src=musicObjectUrl;
+  bgMusic.load();
+  syncMusicUI();
+  showToast('背景音樂已載入，點右上 Music 開始播放');
+};
+
+musicToggle.onclick=async()=>{
+  if(!bgMusic.src){
+    showToast('測試版請先按「載入音樂」');
+    return;
+  }
+  if(bgMusic.paused){
+    try{
+      await bgMusic.play();
+    }catch(e){
+      showToast('手機暫時阻止播放，請再點一次 Music');
+    }
+  }else{
+    bgMusic.pause();
+  }
+  syncMusicUI();
+};
+bgMusic.onplay=syncMusicUI;
+bgMusic.onpause=syncMusicUI;
+bgMusic.onended=syncMusicUI;
+
+// 中獎提示音：每個獎項揭曉時只響一次，短而柔和。
+let audioCtx=null;
+function ensureAudioContext(){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }catch(e){}
+}
+function playRevealChime(){
+  ensureAudioContext();
+  if(!audioCtx) return;
+  const now=audioCtx.currentTime;
+  const master=audioCtx.createGain();
+  const compressor=audioCtx.createDynamicsCompressor();
+  compressor.threshold.setValueAtTime(-18,now);
+  compressor.knee.setValueAtTime(18,now);
+  compressor.ratio.setValueAtTime(4,now);
+  compressor.attack.setValueAtTime(.003,now);
+  compressor.release.setValueAtTime(.18,now);
+  master.gain.setValueAtTime(.0001,now);
+  master.gain.exponentialRampToValueAtTime(.42,now+.018);
+  master.gain.exponentialRampToValueAtTime(.0001,now+.82);
+  master.connect(compressor); compressor.connect(audioCtx.destination);
+  [[784,0],[1046.5,.08],[1318.5,.17]].forEach(([freq,offset],idx)=>{
+    const o=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    o.type=idx===0?'sine':'triangle';
+    o.frequency.setValueAtTime(freq,now+offset);
+    g.gain.setValueAtTime(.0001,now+offset);
+    g.gain.exponentialRampToValueAtTime(idx===0?1:.72,now+offset+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,now+offset+.52);
+    o.connect(g); g.connect(master);
+    o.start(now+offset); o.stop(now+offset+.56);
+  });
+}
+
+function prizeDrawnCount(name){
+  return S.history.filter(h=>h.prize===name).reduce((a,h)=>a+h.winners.length,0);
+}
+function syncFullScreen(){
+  const pi=Number(document.getElementById('drawPrize').value)||0;
+  const p=S.prizes[pi];
+  document.getElementById('fullTitle').textContent=(document.getElementById('title').value||'抽獎活動');
+  if(!p){
+    document.getElementById('fullPrize').textContent='尚未設定獎項';
+    document.getElementById('fullProgress').textContent='已抽 0 / 0 名';
+    return;
+  }
+  const done=prizeDrawnCount(p.name);
+  document.getElementById('fullPrize').textContent=p.name;
+  document.getElementById('fullProgress').textContent=`已抽 ${done} / ${p.qty} 名`;
+  document.getElementById('fullAction').textContent=done>=p.qty?'此獎項已抽完':'開始抽獎';
+}
+function setSingleDrawExitLock(locked){
+  const btn=document.getElementById('closeFullDraw');
+  btn.dataset.drawLocked=locked?'1':'0';
+  btn.disabled=!!locked;
+  btn.classList.toggle('draw-locked',!!locked);
+  btn.setAttribute('aria-disabled',locked?'true':'false');
+}
+function isDrawExitLocked(){
+  return singleDrawing || batchDrawing || document.getElementById('closeFullDraw').dataset.drawLocked==='1';
+}
+
+function performFullDraw(){
+  if(singleDrawing || batchDrawing) return;
+  ensureAudioContext();
+  if(!S.locked)return alert('為了公平性，請先鎖定參加名單。');
+  if(!S.prizes.length)return alert('請先新增獎項。');
+  const pi=Number(document.getElementById('drawPrize').value)||0, prize=S.prizes[pi];
+  const done=prizeDrawnCount(prize.name);
+  const remainingQuota=Math.max(0,prize.qty-done);
+  if(remainingQuota<=0)return alert('這個獎項的名額已經抽完。');
+
+  const requestedQty=Math.max(1,Number(document.getElementById('drawQty').value)||1);
+  if(requestedQty>remainingQuota){
+    return alert(`這個獎項目前只剩 ${remainingQuota} 個名額，請把「本次抽出人數」調整為 ${remainingQuota} 人以下。`);
+  }
+
+  const already=S.history.flatMap(h=>h.winners);
+  let pool=document.getElementById('repeatRule').value==='yes'?S.names:S.names.filter(n=>!already.includes(n));
+  if(pool.length<requestedQty)return alert(`可抽人數不足，目前只剩 ${pool.length} 人。`);
+
+  const winners=randPick(pool,requestedQty), text=document.getElementById('fullWinner');
+  document.getElementById('fullMore').textContent='抽獎中…';
+  text.classList.remove('multi-winners');
+  singleDrawing=true;
+  document.getElementById('fullAction').disabled=true;
+  setSingleDrawExitLock(true);
+  let ticks=0;
+  const anim=setInterval(()=>{
+    text.textContent=pool[Math.floor(Math.random()*pool.length)]||'—';
+    if(++ticks>25){
+      clearInterval(anim);
+      text.classList.toggle('multi-winners',winners.length>1);
+      text.textContent=winners.join('、');
+      document.getElementById('fullMore').textContent=`恭喜中獎｜本次共 ${winners.length} 名`;
+      playRevealChime();
+      S.history.push({time:new Date().toLocaleString('zh-TW',{hour12:false}),prize:prize.name,winners});
+      renderHistory(); syncFullScreen();
+      saveCompletedPeriodIfNeeded();
+      document.getElementById('fullAction').disabled=false;
+      singleDrawing=false;
+      setSingleDrawExitLock(false);
+    }
+  },70);
+}
+document.getElementById('fullDrawBtn').onclick=()=>{
+  if(!S.locked)return alert('進入全螢幕抽獎前，請先鎖定參加名單。');
+  document.getElementById('fullOverallProgress').textContent='';
+  if(!S.prizes.length)return alert('請先新增獎項。');
+  document.getElementById('fullWinner').classList.remove('multi-winners');
+  document.getElementById('fullWinner').textContent='準備抽獎';
+  document.getElementById('fullMore').textContent='';
+  // Batch draw hides the shared full-screen action button on completion.
+  // A fresh manual full-screen entry must always restore that control.
+  const fullAction=document.getElementById('fullAction');
+  fullAction.style.display='';
+  fullAction.disabled=false;
+  setSingleDrawExitLock(false);
+  syncFullScreen();
+  document.getElementById('fullDrawModal').classList.add('show');
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+};
+document.getElementById('closeFullDraw').onclick=(e)=>{
+  if(isDrawExitLocked()){
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  document.getElementById('fullDrawModal').classList.remove('show');
+  document.getElementById('fullOverallProgress').textContent='';
+  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+};
+// Capturing guard: prevents accidental custom-exit taps before the normal click handler.
+document.getElementById('closeFullDraw').addEventListener('pointerdown',(e)=>{
+  if(isDrawExitLocked()){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+},true);
+// A browser/system fullscreen gesture cannot be cancelled by page code. If that happens
+// during a draw, keep our full-screen-style modal visible so the draw/result is not interrupted.
+document.addEventListener('fullscreenchange',()=>{
+  if(isDrawExitLocked()){
+    document.getElementById('fullDrawModal').classList.add('show');
+  }
+});
+document.getElementById('fullAction').onclick=performFullDraw;
+document.getElementById('drawPrize').addEventListener('change',syncFullScreen);
+document.getElementById('exportCsv').onclick=()=>{
+  if(!S.history.length)return alert('目前沒有結果。');
+  let rows=[['序號','獎項','中獎者','時間']];
+  S.history.forEach((h,i)=>h.winners.forEach(w=>rows.push([i+1,h.prize,w,h.time])));
+  const csv='\ufeff'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='抽獎結果.csv';a.click();URL.revokeObjectURL(a.href);
+};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.getElementById(b.dataset.tab).classList.add('active');
+});
+
+let listMode='manual';
+
+function setListMode(mode){
+  listMode=mode;
+  const manualBtn=document.getElementById('manualModeBtn');
+  const autoBtn=document.getElementById('autoModeBtn');
+  const panel=document.getElementById('autoNumberPanel');
+  manualBtn.classList.toggle('active',mode==='manual');
+  autoBtn.classList.toggle('active',mode==='auto');
+  panel.style.display=mode==='auto'?'block':'none';
+}
+
+function updateNumberHint(){
+  const s=Number(document.getElementById('startNumber').value);
+  const e=Number(document.getElementById('endNumber').value);
+  const hint=document.getElementById('numberHint');
+  if(!Number.isFinite(s)||!Number.isFinite(e)){
+    hint.textContent='請輸入有效的起始與結束編號。';
+    return;
+  }
+  if(e<s){
+    hint.textContent='結束編號不能小於起始編號。';
+    return;
+  }
+  const total=e-s+1;
+  hint.textContent=total>300?`目前會產生 ${total} 個編號，超過 300 人上限。`:`目前設定將產生 ${total} 個編號。`;
+}
+
+document.getElementById('manualModeBtn').onclick=()=>setListMode('manual');
+document.getElementById('autoModeBtn').onclick=()=>setListMode('auto');
+document.getElementById('startNumber').addEventListener('input',updateNumberHint);
+document.getElementById('endNumber').addEventListener('input',updateNumberHint);
+
+document.getElementById('generateNumbers').onclick=()=>{
+  if(S.locked) return alert('名單已鎖定，請先解除鎖定才能重新產生編號。');
+
+  const s=Number(document.getElementById('startNumber').value);
+  const e=Number(document.getElementById('endNumber').value);
+  const digits=Number(document.getElementById('numberDigits').value);
+
+  if(!Number.isInteger(s)||!Number.isInteger(e)) return alert('起始與結束編號必須是整數。');
+  if(s<0||e<0) return alert('編號不能小於 0。');
+  if(e<s) return alert('結束編號不能小於起始編號。');
+
+  const total=e-s+1;
+  if(total>300) return alert(`目前設定會產生 ${total} 人，超過 300 人上限。`);
+
+  const textarea=document.getElementById('names');
+  if(textarea.value.trim()){
+    const ok=confirm('目前名單已有內容。產生編號會取代現有名單，確定繼續嗎？');
+    if(!ok) return;
+  }
+
+  const nums=[];
+  for(let i=s;i<=e;i++){
+    nums.push(digits>0?String(i).padStart(digits,'0'):String(i));
+  }
+  textarea.value=nums.join('\n');
+  renderNames();
+  alert(`已產生 ${nums.length} 個編號。`);
+};
+
+
+let batchDrawing=false;
+let singleDrawing=false;
+
+function delay(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
+
+function availablePool(){
+  const already=S.history.flatMap(h=>h.winners);
+  return document.getElementById('repeatRule').value==='yes'
+    ? [...S.names]
+    : S.names.filter(n=>!already.includes(n));
+}
+
+function animateNamePool(pool, targetEl, duration=1800){
+  return new Promise(resolve=>{
+    let elapsed=0;
+    const interval=70;
+    const timer=setInterval(()=>{
+      targetEl.textContent=pool[Math.floor(Math.random()*pool.length)]||'—';
+      elapsed+=interval;
+      if(elapsed>=duration){
+        clearInterval(timer);
+        resolve();
+      }
+    },interval);
+  });
+}
+
+async function drawWholePrize(prize, prizeIndex, totalPrizes){
+  const alreadyDone=prizeDrawnCount(prize.name);
+  const remaining=Math.max(0,prize.qty-alreadyDone);
+  if(remaining===0) return true;
+
+  let pool=availablePool();
+  if(pool.length<remaining){
+    alert(`「${prize.name}」需要 ${remaining} 人，但目前只剩 ${pool.length} 位可抽。`);
+    return false;
+  }
+
+  document.getElementById('fullPrize').textContent=prize.name;
+  document.getElementById('fullProgress').textContent=`本獎項名額 ${remaining} 人`;
+  document.getElementById('fullOverallProgress').textContent=`全部獎項進度 ${prizeIndex+1} / ${totalPrizes}`;
+  document.getElementById('fullMore').textContent='抽獎中…';
+
+  const previewTarget=document.getElementById('fullWinner');
+  await animateNamePool(pool, previewTarget, 1900);
+
+  pool=availablePool();
+  const winners=randPick(pool, remaining);
+  previewTarget.classList.toggle('multi-winners',winners.length>1);
+  previewTarget.textContent=winners.join('、');
+  document.getElementById('fullMore').textContent=`${prize.name} 中獎結果｜${winners.length} 名`;
+  playRevealChime();
+
+  S.history.push({
+    time:new Date().toLocaleString('zh-TW',{hour12:false}),
+    prize:prize.name,
+    winners
+  });
+  renderHistory();
+
+  document.getElementById('fullProgress').textContent=`已抽 ${prizeDrawnCount(prize.name)} / ${prize.qty} 名`;
+  return true;
+}
+
+document.getElementById('drawAllBtn').onclick=async()=>{
+  ensureAudioContext();
+  if(batchDrawing) return;
+  if(!S.locked) return alert('為了公平性，請先鎖定參加名單。');
+  if(!S.prizes.length) return alert('請先新增獎項。');
+
+  const remainingNeeded=S.prizes.reduce((sum,p)=>sum+Math.max(0,p.qty-prizeDrawnCount(p.name)),0);
+  const poolCount=availablePool().length;
+  if(document.getElementById('repeatRule').value==='no' && poolCount<remainingNeeded){
+    return alert(`全部剩餘獎項共需要 ${remainingNeeded} 位中獎者，但目前只剩 ${poolCount} 位可抽。`);
+  }
+
+  batchDrawing=true;
+  document.getElementById('drawAllBtn').disabled=true;
+  document.getElementById('fullDrawModal').classList.add('show');
+  document.getElementById('fullWinner').classList.remove('multi-winners');
+  document.getElementById('fullTitle').textContent=(document.getElementById('title').value||'抽獎活動');
+  document.getElementById('fullAction').style.display='none';
+  setSingleDrawExitLock(true);
+
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+
+  let success=true;
+  for(let i=0;i<S.prizes.length;i++){
+    const ok=await drawWholePrize(S.prizes[i],i,S.prizes.length);
+    if(!ok){ success=false; break; }
+
+    const revealDelay = Number(S.prizes[i].qty) > 40 ? 5000 : 3000;
+    const revealSeconds = revealDelay / 1000;
+    if(i<S.prizes.length-1){
+      document.getElementById('fullMore').textContent += `｜${revealSeconds} 秒後自動進入下一獎項`;
+    }else{
+      document.getElementById('fullMore').textContent += `｜${revealSeconds} 秒後顯示完成畫面`;
+    }
+    await delay(revealDelay);
+  }
+
+  if(success){
+    saveCompletedPeriodIfNeeded();
+    document.getElementById('fullPrize').textContent='全部獎項抽獎完成';
+    document.getElementById('fullProgress').textContent=`共完成 ${S.prizes.length} 個獎項`;
+    document.getElementById('fullOverallProgress').textContent='';
+    document.getElementById('fullWinner').classList.remove('multi-winners');
+    document.getElementById('fullWinner').textContent='抽獎完成';
+    document.getElementById('fullMore').textContent='完整結果已保留在「結果」頁。';
+  }
+
+  batchDrawing=false;
+  setSingleDrawExitLock(false);
+  document.getElementById('fullAction').style.display=success?'none':'';
+  document.getElementById('drawAllBtn').disabled=false;
+};
+
+setSingleDrawExitLock(false);
+updateNumberHint();
+setListMode('manual');
+
+
+
+
+/* V24：本機測試的持久化保險。content:// 關頁前不能依賴非同步 timer，
+   因此只要目前已有登入角色，就把當前房間快照同步寫入該房 localStorage。 */
+function ldFlushLocalNow(){
+  if(!ldRole || !activeEnv || ldLoading || !ldIsLocalTest()) return;
+  try{ ldWriteLocal(activeEnv,ldSnapshotState()); }catch(e){ console.error(e); }
+}
+window.addEventListener('pagehide',ldFlushLocalNow);
+window.addEventListener('beforeunload',ldFlushLocalNow);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') ldFlushLocalNow(); });
+
+/* 抽獎結果一產生就立即落盤，不等 1.2 秒排程。 */
+function ldPersistAfterDrawSoon(){
+  if(!ldRole || !activeEnv || ldLoading) return;
+  if(ldIsLocalTest()){
+    try{ ldWriteLocal(activeEnv,ldSnapshotState()); ldSetSync('已儲存','ok'); }catch(e){ console.error(e); }
+  }else{
+    ldScheduleSave(80);
+  }
+}
+
+/* ===== 整合層事件鉤子：不改 V17 抽獎核心，只在狀態變更後同步 ===== */
+document.getElementById('integrationLoginBtn').addEventListener('click',ldLogin);
+document.getElementById('integrationPass').addEventListener('keydown',e=>{if(e.key==='Enter')ldLogin();});
+document.getElementById('integrationRoom').addEventListener('change',e=>setActivityEnv(e.target.value));
+document.getElementById('adminPasswordToggle').addEventListener('click',()=>document.getElementById('adminPasswordCard').classList.toggle('show'));
+document.getElementById('changeAdminPasswordBtn').addEventListener('click',changeAdminPassword);
+document.getElementById('changeSharedAdminPasswordBtn').addEventListener('click',changeSharedAdminPassword);
+['title','names','repeatRule','drawQty'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>ldScheduleSave()));
+['previewBtn','lockBtn','generateNumbers','addPrize','drawBtn','resetDraw','fullAction','drawAllBtn'].forEach(id=>{
+  const el=document.getElementById(id); if(el) el.addEventListener('click',()=>{setTimeout(ldPersistAfterDrawSoon,180);setTimeout(()=>ldScheduleSave(),1200);setTimeout(()=>ldScheduleSave(),6500);});
+});
+document.addEventListener('click',e=>{ if(e.target?.classList?.contains('icon-btn')) setTimeout(()=>ldScheduleSave(),300); });
+
+/* 完成一期時：保留 V17 最近三期邏輯，並寫入目前房間；下一次完成自動使用下一期編號。 */
+const ldOriginalSaveCompletedPeriodIfNeeded=saveCompletedPeriodIfNeeded;
+saveCompletedPeriodIfNeeded=function(){
+  const wasSaved=S.currentPeriodSaved;
+  ldOriginalSaveCompletedPeriodIfNeeded();
+  if(!wasSaved && S.currentPeriodSaved){
+    if(savedPeriods[0] && !savedPeriods[0].periodNo) savedPeriods[0].periodNo=ldPeriodNo;
+    ldPeriodNo+=1;
+    ldScheduleSave(80);
+  }
+};
+
+renderPrizes(); updateCount(); renderPeriodHistory();
+</script>
+</body>
+</html>
