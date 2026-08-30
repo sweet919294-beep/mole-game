@@ -1122,31 +1122,57 @@ function randPick(arr,n){
   const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
   return a.slice(0,n);
 }
+let manualDrawing=false;
+function syncManualDrawAvailability(){
+  const btn=document.getElementById('drawBtn');
+  if(!btn) return;
+  if(manualDrawing){ btn.disabled=true; return; }
+  if(!S.prizes.length){ btn.disabled=false; btn.textContent='開始抽獎'; return; }
+  const pi=Number(document.getElementById('drawPrize').value);
+  const prize=S.prizes[Number.isInteger(pi)?pi:0];
+  if(!prize){ btn.disabled=false; btn.textContent='開始抽獎'; return; }
+  const full=prizeDrawnCount(prize.name)>=prize.qty;
+  btn.disabled=full;
+  btn.textContent=full?'此獎項已抽完':'開始抽獎';
+}
+
 document.getElementById('drawBtn').onclick=()=>{
+  if(manualDrawing)return;
   ensureAudioContext();
   if(!S.locked)return alert('為了公平性，請先鎖定參加名單。');
   if(!S.prizes.length)return alert('請先新增獎項。');
   const pi=Number(document.getElementById('drawPrize').value), prize=S.prizes[pi];
+  if(!prize)return alert('請先選擇獎項。');
+  const done=prizeDrawnCount(prize.name);
+  const remainingQuota=Math.max(0,prize.qty-done);
+  if(remainingQuota<=0){ syncManualDrawAvailability(); return alert('這個獎項的名額已經抽完。'); }
   const qty=Math.max(1,Number(document.getElementById('drawQty').value)||1);
+  if(qty>remainingQuota){
+    return alert(`這個獎項目前只剩 ${remainingQuota} 個名額，請把「本次手動抽出人數」調整為 ${remainingQuota} 人以下。`);
+  }
   const already=S.history.flatMap(h=>h.winners);
   let pool=document.getElementById('repeatRule').value==='yes'?S.names:S.names.filter(n=>!already.includes(n));
   if(pool.length<qty)return alert(`可抽人數不足，目前只剩 ${pool.length} 人。`);
   const w=randPick(pool,qty);
   const label=document.getElementById('drawLabel'), text=document.getElementById('winnerText'), more=document.getElementById('winnerMore');
   label.textContent=`${prize.name} 抽獎中…`; more.textContent='';
+  manualDrawing=true; syncManualDrawAvailability();
   let ticks=0; const anim=setInterval(()=>{
     text.textContent=pool[Math.floor(Math.random()*pool.length)]||'—';
     if(++ticks>22){clearInterval(anim); text.textContent=w[0]; more.textContent=w.length>1?`其餘中獎者：${w.slice(1).join('、')}`:''; label.textContent=`🎉 ${prize.name}`;
       playRevealChime();
       S.history.push({time:new Date().toLocaleString('zh-TW',{hour12:false}),prize:prize.name,winners:w});
+      manualDrawing=false;
       renderHistory();
       saveCompletedPeriodIfNeeded();
+      syncManualDrawAvailability();
     }
   },70);
 };
 function renderHistory(){
   const el=document.getElementById('historyList');
   el.innerHTML=S.history.length?S.history.map((h,i)=>`<div class="prize"><strong>${i+1}. ${esc(h.prize)}</strong><div>${h.winners.map(esc).join('、')}</div><div class="small">${h.time}</div></div>`).join(''):'<div class="sub">目前沒有抽獎紀錄</div>';
+  syncManualDrawAvailability();
 }
 document.getElementById('resetDraw').onclick=()=>{if(confirm('確定清空全部抽獎結果？')){S.history=[];S.currentPeriodSaved=false;renderHistory();document.getElementById('winnerText').textContent='—';document.getElementById('winnerMore').textContent='';document.getElementById('drawLabel').textContent='等待抽獎';}};
 function groupedResultText(){
@@ -1424,7 +1450,7 @@ document.addEventListener('fullscreenchange',()=>{
   }
 });
 document.getElementById('fullAction').onclick=performFullDraw;
-document.getElementById('drawPrize').addEventListener('change',syncFullScreen);
+document.getElementById('drawPrize').addEventListener('change',()=>{syncFullScreen();syncManualDrawAvailability();});
 document.getElementById('exportCsv').onclick=()=>{
   if(!S.history.length)return alert('目前沒有結果。');
   let rows=[['序號','獎項','中獎者','時間']];
