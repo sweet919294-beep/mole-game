@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>線上抽獎系統｜Dashboard V30</title>
+<title>線上抽獎系統｜Dashboard V31</title>
 <style>
 :root{
   --bg:#f6f7fb; --card:#ffffff; --ink:#333844; --muted:#7b8190;
@@ -677,6 +677,9 @@ function ldReadLocal(env){
 function ldWriteLocal(env,state){localStorage.setItem(ldLocalKey(env),JSON.stringify(state));}
 
 function ldApplyRoomState(g){
+  /* V31：Firebase 即時回寫會重新套用房間狀態；先記住主持人目前選到的獎項，
+     避免每次同步後 drawPrize 被 renderPrizes() 重建並跳回第一項。 */
+  const selectedPrizeValue=document.getElementById('drawPrize')?.value ?? '';
   S.names=Array.isArray(g?.names)?g.names:[];
   S.locked=!!g?.locked;
   S.prizes=Array.isArray(g?.prizes)?g.prizes:[];
@@ -691,6 +694,11 @@ function ldApplyRoomState(g){
   if(typeof renderNames==='function') renderNames();
   else if(typeof updateCount==='function') updateCount();
   if(typeof renderPrizes==='function') renderPrizes();
+  /* V31：若原本選中的獎項在新狀態仍存在，維持原選擇。 */
+  const drawPrizeEl=document.getElementById('drawPrize');
+  if(drawPrizeEl && selectedPrizeValue!=='' && [...drawPrizeEl.options].some(o=>o.value===selectedPrizeValue)){
+    drawPrizeEl.value=selectedPrizeValue;
+  }
   if(typeof renderHistory==='function') renderHistory();
   if(typeof renderPeriodHistory==='function') renderPeriodHistory();
   const lockBtn=document.getElementById('lockBtn'), lockBadge=document.getElementById('lockBadge');
@@ -704,7 +712,18 @@ function ldApplyRoomState(g){
      V17 原本允許手動／自動模式正常切換；真正產生編號時再由 generateNumbers 依 S.locked 阻擋。 */
   document.querySelectorAll('#manualModeBtn,#autoModeBtn,#generateNumbers').forEach(x=>x.disabled=false);
   const wt=document.getElementById('winnerText'), wm=document.getElementById('winnerMore'), dl=document.getElementById('drawLabel');
-  if(wt) wt.textContent='—'; if(wm) wm.textContent=''; if(dl) dl.textContent='等待抽獎';
+  /* V31：HTTPS/Firebase 會在每次抽獎儲存後觸發 value listener。
+     不能在同步時把剛顯示的中獎者重設為「等待抽獎」，改由最新一筆紀錄還原 Dashboard。 */
+  const latest=S.history.length?S.history[S.history.length-1]:null;
+  if(latest && Array.isArray(latest.winners) && latest.winners.length){
+    if(wt) wt.textContent=latest.winners[0];
+    if(wm) wm.textContent=latest.winners.length>1?`其餘中獎者：${latest.winners.slice(1).join('、')}`:'';
+    if(dl) dl.textContent=`🎉 ${latest.prize}`;
+  }else{
+    if(wt) wt.textContent='—';
+    if(wm) wm.textContent='';
+    if(dl) dl.textContent='等待抽獎';
+  }
 }
 
 function handleLuckyRoomValue(snap){
