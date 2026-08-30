@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>線上抽獎系統｜Dashboard V33</title>
+<title>線上抽獎系統｜Dashboard V34</title>
 <style>
 :root{
   --bg:#f6f7fb; --card:#ffffff; --ink:#333844; --muted:#7b8190;
@@ -850,6 +850,16 @@ async function ldLogin(){
   const pass=document.getElementById('integrationPass').value;
   const msg=document.getElementById('integrationLoginMsg');
   if(!pass){msg.textContent='請輸入管理密碼。';return;}
+
+  /* V34：把「進入此房間」這次使用者點擊直接當作背景音樂的播放授權。
+     必須在 Firebase / SHA-256 等 await 之前先呼叫 play()，避免手機瀏覽器
+     因為使用者手勢失效而再次要求點 Music。若密碼驗證失敗，會立即停掉
+     這次登入所啟動的音樂；原本就已在播放的音樂不受影響。 */
+  const musicWasPlaying=(typeof bgMusic!=='undefined' && bgMusic && !bgMusic.paused);
+  if(!musicWasPlaying && typeof bgMusic!=='undefined' && bgMusic && !bgMusic.error){
+    bgMusic.play().catch(()=>{});
+  }
+
   msg.textContent='驗證中…';
 
   let isOwner=false,isShared=false;
@@ -862,9 +872,17 @@ async function ldLogin(){
       const enteredHash=await ldSha256(pass);
       isOwner=enteredHash===cfg.passwordHash;
       isShared=enteredHash===cfg.sharedPasswordHash;
-    }catch(e){msg.textContent='管理員驗證連線失敗。';return;}
+    }catch(e){
+      if(!musicWasPlaying && typeof bgMusic!=='undefined' && bgMusic) bgMusic.pause();
+      msg.textContent='管理員驗證連線失敗。';
+      return;
+    }
   }
-  if(!isOwner && !isShared){msg.textContent='管理密碼不正確。';return;}
+  if(!isOwner && !isShared){
+    if(!musicWasPlaying && typeof bgMusic!=='undefined' && bgMusic) bgMusic.pause();
+    msg.textContent='管理密碼不正確。';
+    return;
+  }
 
   ldRole=isOwner?'owner':'shared';
   document.getElementById('integrationGate').style.display='none';
@@ -1244,7 +1262,7 @@ document.getElementById('copyAgain').onclick=async()=>{
 document.getElementById('closeCopyModal').onclick=()=>document.getElementById('copyModal').classList.remove('show');
 
 // 背景音樂：正式版固定讀取網站同層的 sentimental-piano-emotional.mp3。
-// 受瀏覽器自動播放政策限制，第一次仍需使用者點 Music 才能開始。
+// V34：登入／進入房間的點擊會優先啟動音樂；Music 按鈕仍可隨時暫停／繼續。
 const bgMusic=document.getElementById('bgMusic');
 const musicToggle=document.getElementById('musicToggle');
 const musicStatus=document.getElementById('musicStatus');
