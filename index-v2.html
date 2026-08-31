@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>遊戲活動中心</title>
+<meta name="application-name" content="遊戲活動中心">
+<meta name="description" content="遊戲活動中心">
+<link rel="canonical" href="https://sweet919294-beep.github.io/mole-game/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:site_name" content="遊戲活動中心">
+<meta property="og:title" content="遊戲活動中心">
+<meta property="og:description" content="遊戲活動中心">
+<meta property="og:url" content="https://sweet919294-beep.github.io/mole-game/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="遊戲活動中心">
+<meta name="twitter:description" content="遊戲活動中心">
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#566070}
+body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-height:100vh}
+.wrap{width:min(1280px,94vw);margin:auto;padding:22px 0 56px}
+.hero{text-align:center;margin-bottom:30px}
+.hero h1{margin:0;color:#596a85;font-size:clamp(30px,5vw,48px);letter-spacing:2px}
+.hero p{margin:10px 0 0;color:#8a94a5;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{position:relative;overflow:hidden;min-height:330px;border:1px solid rgba(255,255,255,.95);border-radius:28px;background:rgba(255,255,255,.78);box-shadow:0 15px 40px rgba(91,109,139,.12);text-decoration:none;color:inherit;padding:24px 22px 22px;display:flex;flex-direction:column;align-items:center;transition:.18s ease}
+.card.active:active{transform:scale(.985)}
+.visual{width:100%;height:175px;border-radius:22px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.pig .visual{background:linear-gradient(145deg,#eaf5ff,#fff0f6)}
+.poke .visual{background:linear-gradient(145deg,#f0efff,#fceff6)}
+.draw .visual{background:linear-gradient(145deg,#edf6ff,#fff0f5)}
+.balloon .visual{background:linear-gradient(145deg,#f1f7ff,#fff1f6)}
+.pig-img{width:145px;height:145px;object-fit:contain;filter:drop-shadow(0 8px 8px rgba(83,101,130,.15))}
+.hammer{font-size:56px;position:absolute;right:28px;top:22px;transform:rotate(-22deg);filter:drop-shadow(0 5px 5px rgba(80,90,110,.14))}
+.gift{font-size:94px;filter:drop-shadow(0 8px 7px rgba(80,90,110,.13))}
+.finger{font-size:54px;position:absolute;right:36px;bottom:20px;transform:rotate(-12deg)}
+.tickets{position:relative;width:150px;height:115px}
+.ticket{position:absolute;width:122px;height:62px;border-radius:13px;border:3px dashed rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:21px;box-shadow:0 7px 14px rgba(90,100,125,.12)}
+.t1{background:#9fbfe4;left:7px;top:35px;transform:rotate(-9deg)}
+.t2{background:#e8a9bd;left:25px;top:20px;transform:rotate(9deg)}
+.confetti{position:absolute;font-size:28px}
+.c1{left:24px;top:22px}.c2{right:22px;top:32px}.c3{right:38px;bottom:24px}
+
+/* 射氣球：只新增這組柔和、圓胖、多色飄揚氣球 */
+.balloon-bunch{position:relative;width:190px;height:150px}
+.bal{position:absolute;width:66px;height:62px;border-radius:50% 50% 48% 48%;box-shadow:inset -7px -9px 12px rgba(60,70,100,.08),inset 8px 8px 13px rgba(255,255,255,.6),0 7px 12px rgba(83,101,130,.10)}
+.bal:after{content:"";position:absolute;left:50%;bottom:-42px;width:1.5px;height:42px;background:rgba(115,125,150,.28);transform-origin:top}
+.bal:before{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid currentColor;filter:brightness(.96)}
+.b1{left:18px;top:47px;background:#f2a7bd;color:#f2a7bd;transform:rotate(-5deg)}
+.b2{left:61px;top:12px;background:#f4d68c;color:#f4d68c;transform:rotate(3deg)}
+.b3{left:103px;top:40px;background:#9fc5eb;color:#9fc5eb;transform:rotate(5deg)}
+.b4{left:70px;top:65px;background:#a9d9cf;color:#a9d9cf;transform:rotate(-2deg)}
+.b5{left:124px;top:79px;background:#c6afe8;color:#c6afe8;transform:rotate(7deg)}
+.b6{left:2px;top:95px;width:48px;height:45px;background:#aed0ee;color:#aed0ee;transform:rotate(-8deg);opacity:.9}
+.balloon-spark{position:absolute;font-size:16px;opacity:.55;color:#d8a9c3}.s1{left:6px;top:28px}.s2{right:10px;top:21px}.s3{right:1px;bottom:25px}
+
+.card h2{font-size:23px;margin:20px 0 7px;color:#5e6c82}
+.card p{font-size:14px;line-height:1.65;text-align:center;color:#929aa8;margin:0}
+.go{margin-top:auto;padding-top:18px;font-weight:800;color:#8394ad}
+.footer{text-align:center;margin-top:30px;color:#a2a9b4;font-size:12px}
+
+@media(max-width:1100px){
+  .wrap{width:min(1050px,94vw)}
+  .grid{grid-template-columns:repeat(2,1fr);gap:22px}
+  .card{min-height:305px}
+}
+@media(max-width:560px){
+  .wrap{width:min(92vw,430px);padding-top:28px}
+  .grid{grid-template-columns:1fr;gap:16px}
+  .card{min-height:285px}
+  .visual{height:155px}
+  .pig-img{width:130px;height:130px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<main class="grid">
+    <a class="card active pig" href="./pig.html">
+      <div class="visual"><img class="pig-img" src="./pig_normal_new.png" alt="小豬"><span class="hammer">🔨</span></div>
+      <h2>小豬打打樂</h2><p>眼明手快，看看誰能拿下最高分！</p><div class="go">進入遊戲 →</div>
+    </a>
+
+    <a class="card active poke" href="./xiaobao.html">
+      <div class="visual"><span class="gift">🎁</span><span class="finger">👆</span></div>
+      <h2>戳戳樂</h2><p>挑一格戳下去，看看今天的幸運獎落誰家。</p><div class="go">進入活動 →</div>
+    </a>
+
+    <a class="card active draw" href="./luckydraw.html">
+      <div class="visual"><span class="confetti c1">✦</span><span class="confetti c2">⌁</span><span class="confetti c3">✧</span><div class="tickets"><div class="ticket t1">LUCKY</div><div class="ticket t2">抽獎券</div></div></div>
+      <h2>線上抽獎系統</h2><p>名單、獎項、開獎與中獎紀錄，一站完成。</p><div class="go">進入系統 →</div>
+    </a>
+
+    <a class="card active balloon" href="./balloon-menu.html">
+      <div class="visual">
+        <div class="balloon-bunch" aria-hidden="true">
+          <span class="bal b1"></span><span class="bal b2"></span><span class="bal b3"></span>
+          <span class="bal b4"></span><span class="bal b5"></span><span class="bal b6"></span>
+          <span class="balloon-spark s1">✦</span><span class="balloon-spark s2">✧</span><span class="balloon-spark s3">✦</span>
+        </div>
+      </div>
+      <h2>射氣球</h2><p>瞄準氣球，擊破得分，挑戰更高分數！</p><div class="go">進入遊戲 →</div>
+    </a>
+  </main>
+  <div class="footer">更多活動陸續加入中</div>
+</div>
+</body>
+</html>

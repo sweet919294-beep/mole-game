@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>歡迎來到遊戲活動中心</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --blue:#7faee6; --blue2:#96bde9; --pink:#ef8fa9; --pink2:#f7b5c6;
+  --ink:#667aa0; --muted:#8d9ab1; --cream:#fffaf7;
+}
+html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+body{overflow-x:hidden;background:linear-gradient(180deg,#dfefff 0%,#f7f2ff 44%,#fff2f5 74%,#fff7fa 100%);color:var(--ink)}
+.scene{
+  position:relative; min-height:100vh; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  padding:22px 20px 26px;
+}
+.scene:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 20% 14%,rgba(255,255,255,.75),transparent 18%),
+    radial-gradient(circle at 80% 22%,rgba(255,255,255,.46),transparent 17%),
+    linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.22));
+}
+.content{position:relative;z-index:5;width:min(980px,92vw);text-align:center}
+.welcome{position:relative;display:inline-block;margin-top:2px;padding:12px 48px;background:linear-gradient(180deg,#f9b7c6,#ee8fa7);color:#fff;font-weight:900;letter-spacing:7px;border-radius:9px;box-shadow:0 9px 22px rgba(226,128,154,.19),inset 0 2px 0 #ffffffa8;font-size:19px}
+.welcome:before,.welcome:after{content:"";position:absolute;top:9px;width:48px;height:38px;background:linear-gradient(180deg,#f8b1c2,#e889a2);z-index:-1}
+.welcome:before{left:-36px;clip-path:polygon(0 0,100% 0,76% 50%,100% 100%,0 100%,15% 50%)}
+.welcome:after{right:-36px;clip-path:polygon(0 0,100% 0,85% 50%,100% 100%,0 100%,24% 50%)}
+.mascot{position:absolute;left:50%;top:-46px;transform:translateX(-50%);width:88px;height:48px;background:#fff;border-radius:50px 50px 34px 34px;box-shadow:0 7px 18px rgba(104,129,164,.10)}
+.mascot:before,.mascot:after{content:"";position:absolute;background:#fff;border-radius:50%}
+.mascot:before{width:44px;height:44px;left:-12px;bottom:1px}.mascot:after{width:44px;height:44px;right:-12px;bottom:1px}
+.face{position:absolute;z-index:2;left:50%;top:20px;transform:translateX(-50%);font-size:11px;color:#925d6b;letter-spacing:7px;white-space:nowrap}
+.sprout{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:3px;height:24px;background:#69b89b;border-radius:5px}
+.sprout:before,.sprout:after{content:"";position:absolute;width:24px;height:13px;background:#79c8aa;border-radius:100% 0 100% 0;top:-1px}
+.sprout:before{right:0;transform:rotate(19deg)}.sprout:after{left:0;transform:scaleX(-1) rotate(19deg)}
+.title{
+  margin:32px 0 6px;font-size:clamp(50px,7.3vw,88px);font-weight:1000;line-height:1.04;letter-spacing:2px;
+  filter:drop-shadow(0 7px 12px rgba(102,135,177,.12))
+}
+.title span{display:inline-block;-webkit-text-stroke:9px rgba(255,255,255,.92);paint-order:stroke fill}
+.title .blue{color:#7faee6}.title .pink{color:#ef8fa9}
+.sub{margin:22px auto 26px;font-size:clamp(16px,2vw,21px);font-weight:700;color:#7286a8;letter-spacing:2px}
+.sub .heart{color:#ef9db4}
+.enter{
+  display:inline-flex;align-items:center;justify-content:center;gap:15px;
+  min-width:360px;padding:17px 40px;border-radius:29px;border:4px solid rgba(255,255,255,.9);
+  color:#fff;text-decoration:none;font-size:28px;font-weight:950;letter-spacing:4px;
+  background:linear-gradient(135deg,#74afe5,#8eade0);
+  box-shadow:0 15px 32px rgba(92,125,174,.22),inset 0 2px 0 rgba(255,255,255,.32);
+  animation:breathe 3.4s ease-in-out infinite;
+}
+.playdot{width:54px;height:54px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#73a9df;font-size:22px;padding-left:3px}
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin:48px auto 0;max-width:760px}
+.feature{min-width:0}
+.iconcard{width:74px;height:74px;margin:auto;border-radius:24px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;box-shadow:0 9px 22px rgba(93,112,143,.08)}
+.feature svg{width:47px;height:47px;overflow:visible}
+.feature b{display:block;margin-top:9px;font-size:15px;color:#6f82a3}
+.feature small{display:block;margin-top:3px;font-size:12px;color:#9aa5b7}
+.footer{margin-top:33px;font-size:13px;letter-spacing:2px;color:#949eb0}
+
+/* animated decor */
+.balloon{position:absolute;border-radius:52% 52% 48% 48%;box-shadow:inset -11px -13px 16px rgba(64,79,115,.09),inset 12px 12px 18px rgba(255,255,255,.58),0 12px 20px rgba(77,102,137,.08);animation:float 7.4s ease-in-out infinite}
+.balloon:before{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid currentColor}
+.balloon:after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:115px;background:rgba(125,135,160,.32)}
+.b1{left:4%;top:6%;width:94px;height:111px;background:#f3adc0;color:#f3adc0;animation-duration:8.3s}
+.b2{left:10%;top:18%;width:78px;height:92px;background:#a8c6ea;color:#a8c6ea;animation-duration:9.2s;animation-delay:-2.3s}
+.b3{right:6%;top:14%;width:92px;height:109px;background:#ef9fb6;color:#ef9fb6;animation-duration:8.8s;animation-delay:-3.2s}
+.b4{right:14%;top:30%;width:72px;height:84px;background:#a8c3e8;color:#a8c3e8;animation-duration:9.6s;animation-delay:-4s}
+.b5{right:10%;bottom:9%;width:72px;height:84px;background:#f1cd7c;color:#f1cd7c;animation-duration:9.4s;animation-delay:-1.8s}
+.b6{left:13%;bottom:9%;width:74px;height:87px;background:#99c2e8;color:#99c2e8;animation-duration:8.7s;animation-delay:-3.9s}
+.starBalloon{position:absolute;right:18%;top:38%;font-size:74px;color:#9dc6ed;filter:drop-shadow(0 8px 10px rgba(80,110,150,.08));animation:float 8.5s ease-in-out infinite -2s}
+.starBalloon:after{content:"";position:absolute;left:50%;top:75%;width:1.5px;height:95px;background:rgba(120,135,160,.3)}
+.tw{position:absolute;color:#fff;font-size:24px;text-shadow:0 0 12px rgba(255,255,255,.95);animation:twinkle 3.6s ease-in-out infinite}
+.t1{left:25%;top:11%}.t2{left:34%;top:22%;animation-delay:1.3s}.t3{right:26%;top:12%;animation-delay:2.2s}.t4{right:30%;top:28%;animation-delay:.7s}.t5{left:21%;bottom:23%;animation-delay:1.8s}.t6{right:22%;bottom:24%;animation-delay:2.8s}
+.cloud{position:absolute;background:rgba(255,255,255,.66);border-radius:999px;opacity:.84;animation:cloudMove 24s ease-in-out infinite alternate}
+.cloud:before,.cloud:after{content:"";position:absolute;background:inherit;border-radius:50%}
+.c1{width:220px;height:60px;left:-55px;top:23%}.c1:before{width:90px;height:88px;left:35px;bottom:5px}.c1:after{width:125px;height:105px;right:13px;bottom:0}
+.c2{width:230px;height:62px;right:-60px;top:31%;animation-duration:31s}.c2:before{width:96px;height:90px;left:35px;bottom:6px}.c2:after{width:130px;height:110px;right:13px;bottom:0}
+
+/* bottom fantasy garden */
+.bush{position:absolute;bottom:-44px;border-radius:50% 50% 0 0;filter:blur(.1px)}
+.bl1{left:-55px;width:360px;height:190px;background:linear-gradient(180deg,#9fc9d9,#79b6b7)}
+.bl2{left:135px;width:235px;height:140px;background:#8fc6c1;opacity:.95}
+.br1{right:-40px;width:345px;height:180px;background:linear-gradient(180deg,#f3b0c1,#e993ad)}
+.br2{right:150px;width:220px;height:125px;background:#f3c2cf}
+.giftbox{position:absolute;right:7%;bottom:14px;width:120px;height:105px;background:linear-gradient(180deg,#f4a5bb,#ec8faa);border-radius:12px;box-shadow:0 9px 18px rgba(150,90,120,.12)}
+.giftbox:before{content:"";position:absolute;left:48px;top:0;width:24px;height:100%;background:#f5ce78}
+.giftbox:after{content:"";position:absolute;left:-7px;right:-7px;top:-18px;height:27px;background:#f1a0b6;border-radius:10px}
+.bow{position:absolute;right:7%;bottom:106px;width:120px;height:54px;z-index:2}
+.bow:before,.bow:after{content:"";position:absolute;top:7px;width:54px;height:34px;border:12px solid #f4ca70;border-radius:50% 50% 45% 50%}
+.bow:before{left:3px;transform:rotate(18deg)}.bow:after{right:3px;transform:scaleX(-1) rotate(18deg)}
+.flower{position:absolute;font-size:20px;z-index:2;animation:twinkle 5s ease-in-out infinite}
+.f1{left:5%;bottom:40px}.f2{left:13%;bottom:80px;animation-delay:1.4s}.f3{right:20%;bottom:52px;animation-delay:2.3s}.f4{right:3%;bottom:78px;animation-delay:3s}
+
+@keyframes float{0%,100%{transform:translate(0,0) rotate(-1deg)}50%{transform:translate(9px,-19px) rotate(2.5deg)}}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.82)}50%{opacity:.95;transform:scale(1.15)}}
+@keyframes cloudMove{from{transform:translateX(-12px)}to{transform:translateX(34px)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.022)}}
+
+@media(max-width:700px){
+  .scene{align-items:flex-start;padding:35px 14px 250px;min-height:100vh}
+  .content{width:min(430px,94vw);padding-top:28px}
+  .welcome{font-size:18px;padding:11px 30px;letter-spacing:5px}
+  .mascot{width:78px;height:44px;top:-42px}
+  .title{margin-top:30px;font-size:clamp(56px,18vw,78px);line-height:.98}
+  .title span{-webkit-text-stroke:7px rgba(255,255,255,.94)}
+  .title .blue.first{display:block}
+  .title .pink{display:inline-block}
+  .sub{font-size:15px;line-height:1.7;margin:20px auto 23px;letter-spacing:1px}
+  .enter{min-width:0;width:min(360px,91vw);padding:15px 22px;font-size:25px;border-radius:30px}
+  .playdot{width:50px;height:50px}
+  .features{grid-template-columns:repeat(2,1fr);gap:18px 16px;margin-top:42px;max-width:355px}
+  .iconcard{width:96px;height:96px;border-radius:27px}
+  .feature svg{width:60px;height:60px}
+  .feature b{font-size:18px}.feature small{font-size:13px}
+  .footer{margin-top:30px;font-size:14px}
+  .b1{left:-18px;top:26px;width:79px;height:94px}.b2{left:27px;top:126px;width:69px;height:82px}
+  .b3{right:-18px;top:118px;width:78px;height:93px}.b4{right:20px;top:337px;width:61px;height:72px}
+  .b5{display:none}.b6{display:none}.starBalloon{right:9%;top:27%;font-size:58px}
+  .c1{left:-100px;top:19%}.c2{right:-110px;top:40%}
+  .bl1{width:260px;height:150px}.bl2{left:110px;width:190px;height:110px}
+  .br1{width:260px;height:145px}.br2{right:115px;width:180px;height:105px}
+  .giftbox{right:5%;width:104px;height:92px}.giftbox:before{left:42px;width:20px}.bow{right:5%;width:104px;bottom:94px}
+  .flower{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important}}
+</style>
+</head>
+<body>
+<main class="scene">
+  <div class="cloud c1"></div><div class="cloud c2"></div>
+  <i class="balloon b1"></i><i class="balloon b2"></i><i class="balloon b3"></i><i class="balloon b4"></i><i class="balloon b5"></i><i class="balloon b6"></i>
+  <div class="starBalloon">★</div>
+  <span class="tw t1">✦</span><span class="tw t2">✧</span><span class="tw t3">✦</span><span class="tw t4">✧</span><span class="tw t5">✦</span><span class="tw t6">✧</span>
+
+  <section class="content">
+    <div class="welcome">
+      <div class="mascot"><div class="sprout"></div><div class="face">• ᴗ •</div></div>
+      歡迎來到
+    </div>
+
+    <h1 class="title">
+      <span class="blue first">遊戲</span><span class="pink">活動</span><span class="blue">中心</span>
+    </h1>
+
+    <p class="sub"><span class="heart">♥</span> 一起玩遊戲・拿好禮・創造美好回憶！ <span class="heart">♥</span></p>
+
+    <a class="enter" href="./index.html"><span class="playdot">▶</span>點擊進入</a>
+
+    <div class="features">
+      <div class="feature">
+        <div class="iconcard">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M16 22h32c7 0 12 8 10 15l-5 15c-1 4-6 5-9 2l-7-7H27l-7 7c-3 3-8 2-9-2L6 37c-2-7 3-15 10-15Z" fill="#7999d1"/>
+            <rect x="17" y="30" width="4" height="14" rx="2" fill="#fff"/><rect x="12" y="35" width="14" height="4" rx="2" fill="#fff"/>
+            <circle cx="44" cy="34" r="3" fill="#f0a0b4"/><circle cx="50" cy="40" r="3" fill="#f2cc72"/><circle cx="39" cy="41" r="3" fill="#9fd2c5"/>
+          </svg>
+        </div><b>多款遊戲</b><small>好玩有趣</small>
+      </div>
+      <div class="feature">
+        <div class="iconcard">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="12" y="25" width="40" height="30" rx="5" fill="#ef91aa"/><rect x="8" y="18" width="48" height="12" rx="5" fill="#f5afbf"/>
+            <rect x="28" y="18" width="8" height="37" fill="#f4ce7c"/>
+            <path d="M32 18c-10-14-20-2-10 5 5 3 10-5 10-5Zm0 0c10-14 20-2 10 5-5 3-10-5-10-5Z" fill="#f0bd61"/>
+          </svg>
+        </div><b>豐富獎品</b><small>等你來拿</small>
+      </div>
+      <div class="feature">
+        <div class="iconcard">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M20 10h24v12c0 11-7 18-12 20-5-2-12-9-12-20V10Z" fill="#f0ba55"/>
+            <path d="M20 15H9c0 13 6 19 15 19M44 15h11c0 13-6 19-15 19" fill="none" stroke="#e6a83d" stroke-width="5" stroke-linecap="round"/>
+            <rect x="27" y="42" width="10" height="8" rx="2" fill="#e9aa3f"/><rect x="20" y="50" width="24" height="6" rx="3" fill="#d99238"/>
+            <path d="m32 18 2.5 5 5.5.8-4 4 1 5.6-5-2.6-5 2.6 1-5.6-4-4 5.5-.8Z" fill="#fff4c7"/>
+          </svg>
+        </div><b>挑戰高分</b><small>成為高手</small>
+      </div>
+      <div class="feature">
+        <div class="iconcard">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 54S9 40 9 23c0-8 6-13 13-13 5 0 8 3 10 7 2-4 5-7 10-7 7 0 13 5 13 13 0 17-23 31-23 31Z" fill="#ef8faa"/>
+            <path d="M32 45S19 37 19 27c0-4 3-7 7-7 3 0 5 2 6 4 1-2 3-4 6-4 4 0 7 3 7 7 0 10-13 18-13 18Z" fill="#f4a5b8"/>
+          </svg>
+        </div><b>開心時光</b><small>與你同樂</small>
+      </div>
+    </div>
+
+    <div class="footer">♥ 祝你玩得開心，滿載而歸！ ♥</div>
+  </section>
+
+  <div class="bush bl1"></div><div class="bush bl2"></div><div class="bush br1"></div><div class="bush br2"></div>
+  <div class="giftbox"></div><div class="bow"></div>
+  <span class="flower f1">🌼</span><span class="flower f2">✿</span><span class="flower f3">🌼</span><span class="flower f4">✿</span>
+</main>
+</body>
+</html>
