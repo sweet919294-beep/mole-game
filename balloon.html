@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>射氣球 V0.15 一般模式測試版</title>
+<title>射氣球 V0.15.7 一般模式・金銀反向節奏修正版</title>
 <style>
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -48,19 +48,39 @@ body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;back
       <div class="small">金銀球不計分</div>
     </div>
     <div class="msg" id="msg"></div>
-    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>一般模式 V0.15｜60 秒・20 發<br>追分、搶資源，也要避開黑心氣球</p><button class="btn" id="go">開始測試</button></div></div>
+    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>一般模式 V0.15.7｜60 秒・子彈 20 發<br>追分、搶資源，也要避開黑心氣球</p><button class="btn" id="go">開始測試</button></div></div>
     <div class="end" id="end"><div class="card"><h1>本局結束</h1><p>總分：<b id="final">0</b></p><p class="small" id="stats"></p><button class="btn" id="again">再玩一次</button></div></div>
   </div>
 </div>
 <script>
 (()=>{
 const g=document.getElementById('game'), legend=document.getElementById('legend'), scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),ammoEl=document.getElementById('ammo'),msg=document.getElementById('msg');
-let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,raf=0,lastTs=0,spawnSeq=0;
+let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,goldHits=0,goldWins=0,goldBlanks=0,goldSpawned=0,silverSpawned=0,silverLateSpawned=0,raf=0,lastTs=0,spawnSeq=0,pendingBlack10=null;
 const colors=['pink','blue','green','purple','orange'];
 const scoreWeights=[
   {v:1,w:25},{v:2,w:22},{v:3,w:18},{v:5,w:20},{v:10,w:15}
 ];
 function pickScore(){let r=Math.random()*100;for(const x of scoreWeights){r-=x.w;if(r<0)return x.v}return 1}
+function specialRates(){
+  // V0.15.7 金銀反向節奏修正：兩條曲線持續交叉，不用硬切大量生成。
+  // 金球前段明顯、後段逐退；銀球前段克制、倒數 20 秒開始逐步增加，10 秒內再略推。
+  const t=Math.max(0,Math.min(60,time));
+  let gold,silver;
+  if(t>20){
+    const p=(60-t)/40;            // 60→20 秒：0→1
+    gold=.075-(.025*p);           // 7.5% → 5.0%
+    silver=.028+(.012*p);         // 2.8% → 4.0%
+  }else if(t>10){
+    const p=(20-t)/10;            // 20→10 秒：0→1
+    gold=.050-(.015*p);           // 5.0% → 3.5%
+    silver=.040+(.018*p);         // 4.0% → 5.8%
+  }else{
+    const p=(10-t)/10;            // 10→0 秒：0→1
+    gold=.035-(.010*p);           // 3.5% → 2.5%
+    silver=.058+(.022*p);         // 5.8% → 8.0%
+  }
+  return {gold,silver};
+}
 function hud(){scoreEl.textContent=score;timeEl.textContent=time;ammoEl.textContent=ammo}
 function note(t){msg.textContent=t;msg.classList.add('show');clearTimeout(msg._t);msg._t=setTimeout(()=>msg.classList.remove('show'),900)}
 function bounds(){const W=g.clientWidth,H=g.clientHeight;const safe=Math.max(92,legend.offsetWidth+12);return {W,H,right:Math.max(125,W-safe-6),top:4,bottom:H-10}}
@@ -90,13 +110,19 @@ function spawn(force=false){
   if(!running)return;if(balls.length>=16&&!force)return;
   const {H,right}=bounds();
   const b=document.createElement('div');b.className='balloon';
-  let type='score',label,val=0;const r=Math.random();
+  let type='score',label,val=0;const r=Math.random(),rates=specialRates();
   const goldOn=balls.some(o=>!o.dead&&o.type==='gold'), silverOn=balls.some(o=>!o.dead&&o.type==='silver'), blackOn=balls.some(o=>!o.dead&&o.type==='black');
   const scoreCount=balls.filter(o=>!o.dead&&o.type==='score').length;
-  if(scoreCount>=8 && r<.04 && !goldOn){type='gold';b.classList.add('gold');label='🔫 ?'}
-  else if(scoreCount>=8 && r>=.04 && r<.08 && !silverOn){type='silver';b.classList.add('silver');label='⏱ +3'}
-  else if(scoreCount>=8 && r>=.08 && r<.11 && !blackOn){type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>'}
+  const escort10 = pendingBlack10 && !pendingBlack10.dead && !blackOn;
+  if(escort10){
+    type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>';
+  }
+  else if(scoreCount>=5 && r<rates.gold && !goldOn){type='gold';b.classList.add('gold');label='🔫 ?'}
+  else if(scoreCount>=5 && r>=rates.gold && r<rates.gold+rates.silver && !silverOn){type='silver';b.classList.add('silver');label='⏱ +3'}
+  else if(scoreCount>=5 && r>=rates.gold+rates.silver && r<rates.gold+rates.silver+.03 && !blackOn){type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>'}
   else{val=pickScore();b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+'+val}
+  if(type==='gold')goldSpawned++;
+  if(type==='silver'){silverSpawned++;if(time<=20)silverLateSpawned++;}
   b.innerHTML=type==='black'?label:'<span>'+label+'</span>';
   const sizeMul=pickSize();
   b.style.width=(76*sizeMul)+'px';b.style.height=(72*sizeMul)+'px';
@@ -104,10 +130,25 @@ function spawn(force=false){
   g.appendChild(b);
   const bw=b.offsetWidth||76,bh=b.offsetHeight||72;
   // Rotate entry sides with a shuffled offset so all four edges stay active.
-  const side=(spawnSeq++ + Math.floor(Math.random()*2))%4,s=speedFor(type,val,sizeMul);
+  const side=(spawnSeq++ + Math.floor(Math.random()*2))%4;
+  // 倒數 20 秒後的銀球用較刁鑽的「推入」感：只小幅加速，不做瞬移或點擊閃避。
+  const silverLateBoost=type==='silver'?(time<=10?1.12:(time<=20?1.07:1)):1;
+  const s=speedFor(type,val,sizeMul)*silverLateBoost;
   const yMin=28,yMax=Math.max(100,H-bh-24),xMax=Math.max(70,right-bw);
   let x,y;
-  if(side===0){x=-bw-8;y=yMin+Math.random()*(yMax-yMin)}
+  if(escort10){
+    // About 40% of +10s can call in one nearby black-heart balloon.
+    // Spawn close enough to create hesitation, but not directly on top of the +10.
+    const t=pendingBlack10;
+    // Put the black-heart on one side of the +10 path, then steer it toward a point
+    // slightly ahead of the +10. This creates a visible crossing instead of two balls
+    // that merely happen to spawn near each other.
+    const tsp=Math.max(1,Math.hypot(t.vx,t.vy)), ux=t.vx/tsp, uy=t.vy/tsp;
+    const sideSign=Math.random()<.5?-1:1, gap=82+Math.random()*28, ahead=18+Math.random()*24;
+    x=Math.max(-bw-6,Math.min(right+8,t.x + ux*ahead + (-uy)*gap*sideSign));
+    y=Math.max(-bh-6,Math.min(H+8,t.y + uy*ahead + ( ux)*gap*sideSign));
+  }
+  else if(side===0){x=-bw-8;y=yMin+Math.random()*(yMax-yMin)}
   else if(side===1){x=right+10;y=yMin+Math.random()*(yMax-yMin)}
   else if(side===2){x=Math.random()*xMax;y=-bh-10}
   else{x=Math.random()*xMax;y=H+10}
@@ -130,10 +171,25 @@ function spawn(force=false){
   // Add a modest random fan so paths aren't mechanical, but keep the empty-zone bias.
   angle+=(Math.random()-.5)*0.55;
   let vx=Math.cos(angle)*s,vy=Math.sin(angle)*s;
+  if(escort10){
+    // Cross the +10's route instead of chasing it exactly; this keeps the challenge fair.
+    const t=pendingBlack10;
+    const lead=.42+Math.random()*.22;
+    const ix=t.x+t.vx*lead, iy=t.y+t.vy*lead;
+    const ta=Math.atan2(iy-y,ix-x);
+    vx=Math.cos(ta)*s;vy=Math.sin(ta)*s;
+  }
   const obj={b,type,val,dead:false,x,y,vx,vy,phase:Math.random()*Math.PI*2,wobble:4+Math.random()*5,
     steer:(Math.random()<.5?-1:1)*(0.14+Math.random()*0.24),age:0,bounces:0,retarget:.82+Math.random()*1.08,sizeMul,
-    speedPhase:Math.random()*Math.PI*2,speedRate:1.35+Math.random()*1.25,baseSpeed:s};
+    speedPhase:Math.random()*Math.PI*2,speedRate:1.35+Math.random()*1.25,baseSpeed:s,escortTarget:escort10?pendingBlack10:null,escortUntil:escort10?1.65:0};
   b.style.transform=`translate3d(${x}px,${y}px,0)`;balls.push(obj);
+  if(escort10) pendingBlack10=null;
+  // Controlled risk: roughly 40% of +10 balloons invite a nearby black-heart ball.
+  // The black ball is still capped at one on screen, so this cannot turn into a black-ball swarm.
+  if(type==='score'&&val===10&&!blackOn&&Math.random()<.40){
+    pendingBlack10=obj;
+    setTimeout(()=>{if(running&&pendingBlack10===obj&&!obj.dead)spawn();else if(pendingBlack10===obj)pendingBlack10=null},180+Math.random()*260);
+  }
   b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();shoot(obj,e.clientX,e.clientY)});
 }
 function remove(o){if(o.dead)return;o.dead=true;o.b.remove();balls=balls.filter(x=>x!==o)}
@@ -155,8 +211,22 @@ function motion(ts){
     const newSpeed=currentSpeed+(desiredSpeed-currentSpeed)*blend;
     o.vx=o.vx/currentSpeed*newSpeed;o.vy=o.vy/currentSpeed*newSpeed;
 
-    // Periodically bias toward a less occupied vertical third, but turn gradually enough to remain readable.
-    if(o.retarget<=0){
+    // Paired black-heart event: for the first moment, keep steering toward a
+    // predicted +10 position so the two paths visibly converge/cross. The target
+    // remains tappable; the black-heart is not glued to it and separates afterward.
+    if(o.type==='black' && o.escortTarget && !o.escortTarget.dead && o.age<o.escortUntil){
+      const t=o.escortTarget, lead=Math.max(.10,.48-o.age*.16);
+      const tx=t.x+t.vx*lead, ty=t.y+t.vy*lead;
+      const desired=Math.atan2(ty-o.y,tx-o.x),cur=Math.atan2(o.vy,o.vx);
+      let diff=((desired-cur+Math.PI*3)%(Math.PI*2))-Math.PI;
+      diff=Math.max(-1.05,Math.min(1.05,diff));
+      const sp=Math.hypot(o.vx,o.vy),a=cur+diff*Math.min(1,dt*5.8);
+      o.vx=Math.cos(a)*sp;o.vy=Math.sin(a)*sp;
+      o.retarget=.35;
+    }
+    // Periodically bias toward a less occupied vertical third, but do not let that
+    // logic break an active +10/black-heart crossing event.
+    else if(o.retarget<=0){
       const thirds=[0,0,0],usable=Math.max(180,H-90);
       for(const q of balls){if(q.dead)continue;const yy=Math.max(0,Math.min(usable,q.y+36));thirds[Math.min(2,Math.floor(yy/(usable/3)))]++;}
       const m=Math.min(...thirds),cs=thirds.map((n,i)=>n===m?i:-1).filter(i=>i>=0),z=cs[Math.floor(Math.random()*cs.length)];
@@ -194,7 +264,7 @@ function motion(ts){
 function shoot(o,cx,cy){
   if(!running||o.dead||ammo<=0)return;shots++;ammo--;hits++;let text='';
   if(o.type==='score'){score+=o.val;text='+'+o.val}
-  else if(o.type==='gold'){if(Math.random()<.55){ammo+=3;text='🔫 +3';note('補到 3 發子彈！')}else{text='💨 空包';note('空包！')}}
+  else if(o.type==='gold'){goldHits++;if(Math.random()<.55){goldWins++;ammo+=3;text='🔫 +3';note('補到 3 發子彈！')}else{goldBlanks++;text='💨 空包';note('空包！')}}
   else if(o.type==='silver'){time+=3;text='⏱ +3';note('時間 +3 秒！')}
   else if(o.type==='black'){score-=5;blackHits++;text='💔 -5';note('誤射黑心氣球，-5 分！')}
   const rect=g.getBoundingClientRect(),p=document.createElement('div');p.className='pop';p.textContent=text;p.style.left=(cx-rect.left-20)+'px';p.style.top=(cy-rect.top-20)+'px';g.appendChild(p);setTimeout(()=>p.remove(),750);remove(o);hud();if(ammo<=0)note('子彈用完，等時間結束')
@@ -213,7 +283,7 @@ g.addEventListener('pointerdown',e=>{
 });
 
 function begin(){
-  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=blackHits=0;spawnSeq=Math.floor(Math.random()*4);running=true;lastTs=0;hud();
+  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=blackHits=goldHits=goldWins=goldBlanks=goldSpawned=silverSpawned=silverLateSpawned=0;spawnSeq=Math.floor(Math.random()*4);pendingBlack10=null;running=true;lastTs=0;hud();
   document.getElementById('start').style.display='none';document.getElementById('end').classList.remove('show');
   for(let i=0;i<9;i++)setTimeout(()=>spawn(true),i*150);
   clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);raf=requestAnimationFrame(motion);
@@ -222,7 +292,7 @@ function begin(){
 }
 function finish(){
   if(!running)return;running=false;clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);balls.forEach(remove);
-  document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0;document.getElementById('stats').textContent=`射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜黑心誤射 ${blackHits}｜剩餘 ${ammo} 發`;document.getElementById('end').classList.add('show')
+  document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0;document.getElementById('stats').textContent=`射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜黑心誤射 ${blackHits}｜剩餘 ${ammo} 發｜金球出現 ${goldSpawned}｜金球命中 ${goldHits}｜補彈 ${goldWins}｜空包 ${goldBlanks}｜銀球出現 ${silverSpawned}｜後20秒銀球 ${silverLateSpawned}`;document.getElementById('end').classList.add('show')
 }
 // Mobile game: suppress browser zoom/gesture handling without changing gameplay.
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
