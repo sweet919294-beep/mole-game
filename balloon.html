@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>射氣球 V0.15.7 一般模式・金銀反向節奏修正版</title>
+<title>射氣球 V0.15.8 一般模式・後期三方抉擇測試版</title>
 <style>
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -48,14 +48,14 @@ body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;back
       <div class="small">金銀球不計分</div>
     </div>
     <div class="msg" id="msg"></div>
-    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>一般模式 V0.15.7｜60 秒・子彈 20 發<br>追分、搶資源，也要避開黑心氣球</p><button class="btn" id="go">開始測試</button></div></div>
+    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>一般模式 V0.15.8｜60 秒・子彈 20 發<br>追分、搶資源，也要避開黑心氣球</p><button class="btn" id="go">開始測試</button></div></div>
     <div class="end" id="end"><div class="card"><h1>本局結束</h1><p>總分：<b id="final">0</b></p><p class="small" id="stats"></p><button class="btn" id="again">再玩一次</button></div></div>
   </div>
 </div>
 <script>
 (()=>{
 const g=document.getElementById('game'), legend=document.getElementById('legend'), scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),ammoEl=document.getElementById('ammo'),msg=document.getElementById('msg');
-let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,goldHits=0,goldWins=0,goldBlanks=0,goldSpawned=0,silverSpawned=0,silverLateSpawned=0,raf=0,lastTs=0,spawnSeq=0,pendingBlack10=null;
+let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,goldHits=0,goldWins=0,goldBlanks=0,goldSpawned=0,silverSpawned=0,silverLateSpawned=0,raf=0,lastTs=0,spawnSeq=0,pendingBlack10=null,pendingDecisionSilver=null;
 const colors=['pink','blue','green','purple','orange'];
 const scoreWeights=[
   {v:1,w:25},{v:2,w:22},{v:3,w:18},{v:5,w:20},{v:10,w:15}
@@ -114,9 +114,11 @@ function spawn(force=false){
   const goldOn=balls.some(o=>!o.dead&&o.type==='gold'), silverOn=balls.some(o=>!o.dead&&o.type==='silver'), blackOn=balls.some(o=>!o.dead&&o.type==='black');
   const scoreCount=balls.filter(o=>!o.dead&&o.type==='score').length;
   const escort10 = pendingBlack10 && !pendingBlack10.dead && !blackOn;
+  const decision10 = pendingDecisionSilver && !pendingDecisionSilver.dead && time<=20 && !blackOn;
   if(escort10){
     type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>';
   }
+  else if(decision10){type='score';val=10;b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+10'}
   else if(scoreCount>=5 && r<rates.gold && !goldOn){type='gold';b.classList.add('gold');label='🔫 ?'}
   else if(scoreCount>=5 && r>=rates.gold && r<rates.gold+rates.silver && !silverOn){type='silver';b.classList.add('silver');label='⏱ +3'}
   else if(scoreCount>=5 && r>=rates.gold+rates.silver && r<rates.gold+rates.silver+.03 && !blackOn){type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>'}
@@ -130,7 +132,9 @@ function spawn(force=false){
   g.appendChild(b);
   const bw=b.offsetWidth||76,bh=b.offsetHeight||72;
   // Rotate entry sides with a shuffled offset so all four edges stay active.
-  const side=(spawnSeq++ + Math.floor(Math.random()*2))%4;
+  let side=(spawnSeq++ + Math.floor(Math.random()*2))%4;
+  // 後期三方抉擇：銀球在一側時，事件 +10 從相反邊進場，迫使視線選邊。
+  if(decision10){const ss=pendingDecisionSilver.entrySide;side=ss===0?1:ss===1?0:ss===2?3:2;}
   // 倒數 20 秒後的銀球用較刁鑽的「推入」感：只小幅加速，不做瞬移或點擊閃避。
   const silverLateBoost=type==='silver'?(time<=10?1.12:(time<=20?1.07:1)):1;
   const s=speedFor(type,val,sizeMul)*silverLateBoost;
@@ -180,13 +184,24 @@ function spawn(force=false){
     vx=Math.cos(ta)*s;vy=Math.sin(ta)*s;
   }
   const obj={b,type,val,dead:false,x,y,vx,vy,phase:Math.random()*Math.PI*2,wobble:4+Math.random()*5,
-    steer:(Math.random()<.5?-1:1)*(0.14+Math.random()*0.24),age:0,bounces:0,retarget:.82+Math.random()*1.08,sizeMul,
+    steer:(Math.random()<.5?-1:1)*(0.14+Math.random()*0.24),age:0,bounces:0,retarget:.82+Math.random()*1.08,sizeMul,entrySide:side,
     speedPhase:Math.random()*Math.PI*2,speedRate:1.35+Math.random()*1.25,baseSpeed:s,escortTarget:escort10?pendingBlack10:null,escortUntil:escort10?1.65:0};
   b.style.transform=`translate3d(${x}px,${y}px,0)`;balls.push(obj);
   if(escort10) pendingBlack10=null;
+  if(decision10){
+    pendingDecisionSilver=null;
+    // 此事件的 +10 必定帶一顆黑心，黑心仍沿用既有交叉/黏著干擾方式。
+    pendingBlack10=obj;
+    setTimeout(()=>{if(running&&pendingBlack10===obj&&!obj.dead)spawn(true);else if(pendingBlack10===obj)pendingBlack10=null},150+Math.random()*180);
+  }
+  // 後 20 秒銀球偶爾觸發「另一方向 +10＋黑心」；越接近結束只小幅增加，不是每顆必出。
+  if(type==='silver'&&time<=20&&!blackOn&&!pendingBlack10&&!pendingDecisionSilver){
+    const lateP=time<=10 ? (.32+(10-time)*.01) : (.20+(20-time)*.012);
+    if(Math.random()<lateP){pendingDecisionSilver=obj;setTimeout(()=>{if(running&&pendingDecisionSilver===obj&&!obj.dead)spawn(true);else if(pendingDecisionSilver===obj)pendingDecisionSilver=null},170+Math.random()*220);}
+  }
   // Controlled risk: roughly 40% of +10 balloons invite a nearby black-heart ball.
   // The black ball is still capped at one on screen, so this cannot turn into a black-ball swarm.
-  if(type==='score'&&val===10&&!blackOn&&Math.random()<.40){
+  if(type==='score'&&val===10&&!decision10&&!blackOn&&Math.random()<.40){
     pendingBlack10=obj;
     setTimeout(()=>{if(running&&pendingBlack10===obj&&!obj.dead)spawn();else if(pendingBlack10===obj)pendingBlack10=null},180+Math.random()*260);
   }
@@ -283,7 +298,7 @@ g.addEventListener('pointerdown',e=>{
 });
 
 function begin(){
-  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=blackHits=goldHits=goldWins=goldBlanks=goldSpawned=silverSpawned=silverLateSpawned=0;spawnSeq=Math.floor(Math.random()*4);pendingBlack10=null;running=true;lastTs=0;hud();
+  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=blackHits=goldHits=goldWins=goldBlanks=goldSpawned=silverSpawned=silverLateSpawned=0;spawnSeq=Math.floor(Math.random()*4);pendingBlack10=null;pendingDecisionSilver=null;running=true;lastTs=0;hud();
   document.getElementById('start').style.display='none';document.getElementById('end').classList.remove('show');
   for(let i=0;i<9;i++)setTimeout(()=>spawn(true),i*150);
   clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);raf=requestAnimationFrame(motion);
