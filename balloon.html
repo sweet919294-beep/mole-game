@@ -324,5 +324,68 @@ document.addEventListener('touchend',e=>{
 document.getElementById('go').onclick=begin;document.getElementById('again').onclick=begin;hud();
 })();
 </script>
+
+<audio id="balloonBgm" src="./leberch-whimsical-250869.mp3" preload="auto" loop></audio>
+<script id="balloonBgmBridge">
+(() => {
+  const KEY_TIME = 'balloonBgmTime';
+  const KEY_ON = 'balloonBgmOn';
+  const bgm = document.getElementById('balloonBgm');
+  if (!bgm) return;
+
+  bgm.volume = 0.42;
+
+  const saved = Number(sessionStorage.getItem(KEY_TIME));
+  if (Number.isFinite(saved) && saved >= 0) {
+    const restore = () => {
+      const duration = Number.isFinite(bgm.duration) && bgm.duration > 0 ? bgm.duration : 95;
+      bgm.currentTime = saved % duration;
+    };
+    if (bgm.readyState >= 1) restore();
+    else bgm.addEventListener('loadedmetadata', restore, {once:true});
+  }
+
+  function markOn() {
+    sessionStorage.setItem(KEY_ON, '1');
+  }
+
+  function saveTime() {
+    if (Number.isFinite(bgm.currentTime)) {
+      sessionStorage.setItem(KEY_TIME, String(bgm.currentTime));
+      markOn();
+    }
+  }
+
+  function playBgm() {
+    markOn();
+    const p = bgm.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  }
+
+  playBgm();
+
+  const unlock = () => {
+    playBgm();
+    document.removeEventListener('pointerdown', unlock, true);
+    document.removeEventListener('touchstart', unlock, true);
+  };
+  document.addEventListener('pointerdown', unlock, true);
+  document.addEventListener('touchstart', unlock, {capture:true, passive:true});
+
+  const saver = setInterval(saveTime, 250);
+  window.addEventListener('pagehide', () => {
+    saveTime();
+    clearInterval(saver);
+  });
+
+  window.stopBalloonBgmForLobby = () => {
+    saveTime();
+    bgm.pause();
+    sessionStorage.removeItem(KEY_TIME);
+    sessionStorage.removeItem(KEY_ON);
+  };
+})();
+</script>
+
 </body>
 </html>

@@ -66,7 +66,7 @@ body{background:linear-gradient(145deg,#edf6ff 0%,#fff8fb 52%,#f5f3fa 100%);min-
 </head>
 <body>
 <div class="page">
-  <div class="topline"><a class="back" href="./index.html">← 回遊戲活動中心</a></div>
+  <div class="topline"><a class="back" id="backToLobby" href="./index.html">← 回遊戲活動中心</a></div>
 
   <header class="hero">
     <i class="float f1"></i><i class="float f2"></i><i class="float f3"></i><i class="float f4"></i>
@@ -132,5 +132,80 @@ body{background:linear-gradient(145deg,#edf6ff 0%,#fff8fb 52%,#f5f3fa 100%);min-
     <p class="tip">先看清楚球面再射擊，有限的子彈要用在值得的氣球上。</p>
   </section>
 </div>
+
+<audio id="balloonBgm" src="./leberch-whimsical-250869.mp3" preload="auto" loop></audio>
+<script id="balloonBgmBridge">
+(() => {
+  const KEY_TIME = 'balloonBgmTime';
+  const KEY_ON = 'balloonBgmOn';
+  const bgm = document.getElementById('balloonBgm');
+  if (!bgm) return;
+
+  bgm.volume = 0.42;
+
+  const saved = Number(sessionStorage.getItem(KEY_TIME));
+  if (Number.isFinite(saved) && saved >= 0) {
+    const restore = () => {
+      const duration = Number.isFinite(bgm.duration) && bgm.duration > 0 ? bgm.duration : 95;
+      bgm.currentTime = saved % duration;
+    };
+    if (bgm.readyState >= 1) restore();
+    else bgm.addEventListener('loadedmetadata', restore, {once:true});
+  }
+
+  function markOn() {
+    sessionStorage.setItem(KEY_ON, '1');
+  }
+
+  function saveTime() {
+    if (Number.isFinite(bgm.currentTime)) {
+      sessionStorage.setItem(KEY_TIME, String(bgm.currentTime));
+      markOn();
+    }
+  }
+
+  function playBgm() {
+    markOn();
+    const p = bgm.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  }
+
+  playBgm();
+
+  const unlock = () => {
+    playBgm();
+    document.removeEventListener('pointerdown', unlock, true);
+    document.removeEventListener('touchstart', unlock, true);
+  };
+  document.addEventListener('pointerdown', unlock, true);
+  document.addEventListener('touchstart', unlock, {capture:true, passive:true});
+
+  const saver = setInterval(saveTime, 250);
+  window.addEventListener('pagehide', () => {
+    saveTime();
+    clearInterval(saver);
+  });
+
+  window.stopBalloonBgmForLobby = () => {
+    saveTime();
+    bgm.pause();
+    sessionStorage.removeItem(KEY_TIME);
+    sessionStorage.removeItem(KEY_ON);
+  };
+})();
+</script>
+
+
+<script id="balloonLobbyExit">
+(() => {
+  const back = document.getElementById('backToLobby');
+  if (back) back.addEventListener('click', () => {
+    if (typeof window.stopBalloonBgmForLobby === 'function') {
+      window.stopBalloonBgmForLobby();
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
