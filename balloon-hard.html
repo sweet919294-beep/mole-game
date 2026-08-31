@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>射氣球 Hard V0.4.24・30秒金銀節奏校正版</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;background:#dff3ff;color:#27445b;overflow:hidden}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr}
+.top{display:flex;gap:8px;padding:8px;background:rgba(255,255,255,.8);backdrop-filter:blur(8px);font-weight:800;align-items:center;justify-content:center;flex-wrap:wrap;z-index:60}
+.pill{background:#fff;border-radius:16px;padding:7px 12px;box-shadow:0 2px 8px #7aa7bd33}
+.game{position:relative;overflow:hidden;background:linear-gradient(#dff4ff 0 78%,#d8f0d2 78%);touch-action:none;-webkit-touch-callout:none}
+.cloud{position:absolute;background:#fff9;border-radius:50px;width:110px;height:34px;filter:blur(.2px);pointer-events:none}
+.cloud:before,.cloud:after{content:'';position:absolute;background:#fff9;border-radius:50%}
+.cloud:before{width:48px;height:48px;left:18px;top:-22px}.cloud:after{width:58px;height:58px;right:10px;top:-28px}
+.legend{position:absolute;right:5px;top:7px;width:92px;background:#ffffffbf;border:1px solid #ffffffcc;border-radius:16px;padding:7px 6px;z-index:20;font-size:11px;line-height:1.32;box-shadow:0 3px 12px #527c9222;pointer-events:none;backdrop-filter:blur(4px)}
+.legend b{display:block;text-align:center;margin-bottom:5px;font-size:12px}.legend div{margin:4px 0}.legend .small{font-size:10px;opacity:.78}
+.start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:40;background:#dff4ffcc}
+.card{background:#fffffff0;padding:22px;border-radius:24px;text-align:center;box-shadow:0 10px 35px #51798c44;max-width:88%}
+.card h1{margin:0 0 8px}.btn{border:0;background:#fff;border-radius:18px;padding:12px 24px;font-weight:900;font-size:18px;color:#31546a;box-shadow:0 4px 12px #5d829733}
+.balloon{position:absolute;width:76px;height:72px;border-radius:52% 52% 48% 48%;display:flex;align-items:center;justify-content:center;font-weight:1000;font-size:22px;color:#fff;text-shadow:0 2px 3px #0005;box-shadow:inset -8px -10px 14px #0002,inset 9px 9px 14px #fff7,0 5px 8px #56778933;user-select:none;-webkit-user-select:none;z-index:5;will-change:transform;touch-action:none}
+.balloon:after{content:'';position:absolute;bottom:-8px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid currentColor;filter:brightness(.85)}
+.gold{background:linear-gradient(135deg,#fff1a7,#d9a820);color:#d9a820}.silver{background:linear-gradient(135deg,#fff,#c9d0d5);color:#b8c0c6}.black{box-shadow:inset -8px -10px 14px #0002,inset 9px 9px 14px #fff5,0 5px 8px #56778933}.black:before{content:'';display:none}.blackmark{display:flex;align-items:center;justify-content:center;line-height:.9;position:relative;min-width:1.65em;min-height:1.25em}.blackmark .heart{font-size:1.06em}.blackmark em{display:none}.pink{background:#f38da5;color:#f38da5}.blue{background:#69aee8;color:#69aee8}.green{background:#70c995;color:#70c995}.purple{background:#a78adf;color:#a78adf}.orange{background:#f2a35e;color:#f2a35e}.balloon span{color:white;pointer-events:none}.silver span{color:#586c78;text-shadow:none}.gold span{color:#725511;text-shadow:none}.black span{color:white;text-shadow:0 2px 3px #0003}
+/* Hard V0.4.8: penalty balloons use the exact ordinary colour families and typography.
+   No heart, warning colour, bandage or special silhouette: danger balloons show a plain 5 with no plus sign; ordinary score balloons keep their + sign. */
+.black.mixblack{box-shadow:inset -8px -10px 14px #0002,inset 9px 9px 14px #fff5,0 5px 8px #56778933}
+.black.mixblack.camopink{background:#f38da5;color:#f38da5}
+.black.mixblack.camoblue{background:#69aee8;color:#69aee8}
+.black.mixblack.camogreen{background:#70c995;color:#70c995}
+.black.mixblack.camopurple{background:#a78adf;color:#a78adf}
+.black.mixblack.camoorange{background:#f2a35e;color:#f2a35e}
+.black.mixblack:before{content:'';display:none}
+.black.mixblack span{color:white;text-shadow:0 2px 3px #0003}
+.black.mixblack .blackmark{display:flex;align-items:center;justify-content:center;min-width:1.65em;min-height:1.25em}
+.black.mixblack .blackmark .scorefake{font-weight:900;font-size:1em;letter-spacing:-.04em}
+.black.mixblack .blackmark .heart,.black.mixblack .blackmark em{display:none}
+.windfx{position:absolute;inset:0;z-index:18;pointer-events:none;opacity:0;transition:opacity .22s;overflow:hidden}.windfx.show{opacity:1}.windfx:before,.windfx:after{content:'';position:absolute;left:-20%;width:140%;height:3px;border-radius:50%;background:#ffffffb8;box-shadow:0 24px 0 #ffffff91,0 49px 0 #ffffff70,0 77px 0 #ffffffa0;transform:rotate(var(--wind-angle,0deg));animation:windSweep .48s linear infinite}@keyframes windSweep{from{translate:-8% 0}to{translate:8% 0}}.windbadge{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:26;background:#3c7596e8;color:#fff;padding:7px 12px;border-radius:18px;font-weight:900;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}.windbadge.show{opacity:1}.msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:25;background:#ffffffed;padding:8px 14px;border-radius:18px;font-weight:900;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}.msg.show{opacity:1}
+.rainfx{position:absolute;inset:0;z-index:17;pointer-events:none;opacity:0;transition:opacity .22s;overflow:hidden;background:linear-gradient(180deg,#8bb9d11a,#527f9b24)}.rainfx.show{opacity:1}.rainfx:before,.rainfx:after{content:'';position:absolute;inset:-25% -10%;background:repeating-linear-gradient(105deg,transparent 0 16px,#ffffff8f 17px 19px,transparent 20px 34px);animation:rainFall .42s linear infinite}.rainfx:after{opacity:.55;transform:translateX(19px);animation-duration:.56s}@keyframes rainFall{from{translate:0 -10%}to{translate:-4% 14%}}.rainbadge{position:absolute;left:50%;top:48px;transform:translateX(-50%);z-index:26;background:#527f9be8;color:#fff;padding:7px 12px;border-radius:18px;font-weight:900;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}.rainbadge.show{opacity:1}
+.end{display:none;position:absolute;inset:0;z-index:50;background:#dff4ffee;align-items:center;justify-content:center}.end.show{display:flex}.small{font-size:13px;opacity:.75}
+@media(max-width:380px){.legend{width:86px;font-size:10.5px}.balloon{width:72px;height:68px;font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="pill">⭐ <span id="score">0</span></div>
+    <div class="pill">⏱ <span id="time">30</span> 秒</div>
+    <div class="pill">🔫 <span id="ammo">20</span></div>
+  </div>
+  <div class="game" id="game">
+    <div class="cloud" style="left:7%;top:12%"></div>
+    <div class="cloud" style="left:45%;top:34%;transform:scale(.7)"></div>
+    <div class="legend" id="legend">
+      <b>🎈 說明</b>
+      <div>彩球：有 + 號＝加分</div>
+      <div>🟡 🔫?：+3 或空包</div>
+      <div>⚪ ⏱+3：加 3 秒</div>
+      <div>彩球：無 + 號＝扣該分數</div>
+      <div class="small">金銀球不計分</div>
+    </div>
+    <div class="windfx" id="windfx"></div><div class="windbadge" id="windbadge">💨 大風！</div><div class="rainfx" id="rainfx"></div><div class="rainbadge" id="rainbadge">🌧️ 大雨！搶分時間</div>
+    <div class="msg" id="msg"></div>
+    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>困難模式 Hard V0.4.25｜30 秒・子彈 20 發<br>30秒金銀資源戰＋真假球雨＋密集爆發波＋清場強風＋無 + 號負分球＋大雨搶分窗口</p><button class="btn" id="go">開始測試</button></div></div>
+    <div class="end" id="end"><div class="card"><h1>本局結束</h1><p>總分：<b id="final">0</b></p><p class="small" id="stats"></p><button class="btn" id="again">再玩一次</button></div></div>
+  </div>
+</div>
+<script>
+(()=>{
+const g=document.getElementById('game'), legend=document.getElementById('legend'), scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),ammoEl=document.getElementById('ammo'),msg=document.getElementById('msg'),windfx=document.getElementById('windfx'),windbadge=document.getElementById('windbadge'),rainfx=document.getElementById('rainfx'),rainbadge=document.getElementById('rainbadge');
+const GAME_DURATION=30;
+function phaseTime(){return time*(60/GAME_DURATION)}
+let score=0,time=GAME_DURATION,ammo=20,running=false,gameStartedAt=0,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,mixBlackSpawned=0,mixBlackHits=0,neg5Spawned=0,neg3Spawned=0,neg10Spawned=0,neg1Spawned=0,neg5Hits=0,neg3Hits=0,neg10Hits=0,neg1Hits=0,goldHits=0,goldWins=0,goldBlanks=0,goldSpawned=0,silverSpawned=0,silverLateSpawned=0,goldEarlySpawned=0,silverLast10Spawned=0,hidden10Spawned=0,hidden10Hits=0,windEvents=0,windBaitEvents=0,raf=0,lastTs=0,spawnSeq=0,pendingBlack10=null,pendingDecisionSilver=null,pendingCover10=null,windActive=false,windX=0,windY=0,windUntil=0,nextWindAt=0,windDirX=0,windDirY=0,windMaxEvents=0,windBaitPending=false,windBaitAt=0,windSourceX=0,windSourceY=0,goldTimer=0,silverTimer=0,rainActive=false,rainUntil=0,nextRainAt=0,rainEvents=0,rainMaxEvents=1,ambushBlackPlanned=0,ambushBlackMax=0,burstEvents=0,burstMaxEvents=0,nextBurstAt=0,burstTimer=0,trapRainEvents=0,trapRainMaxEvents=0,nextTrapRainAt=0,trapRainTimer=0,trapRainActive=false,trapRainNegSpawned=0,trapRainPosSpawned=0,trapRainNegHits=0,trapRainPlan=[],trapRainTrapWaves=0,trapRainMixedWaves=0,trapRainRewardWaves=0;
+const colors=['pink','blue','green','purple','orange'];
+const scoreWeights=[
+  {v:1,w:29},{v:2,w:24},{v:3,w:20},{v:5,w:21},{v:10,w:6}
+];
+function pickScore(){let r=Math.random()*100;for(const x of scoreWeights){r-=x.w;if(r<0)return x.v}return 1}
+function specialRates(){
+  // V0.15.7 金銀反向節奏修正：兩條曲線持續交叉，不用硬切大量生成。
+  // 金球前段明顯、後段逐退；銀球前段克制、倒數 20 秒開始逐步增加，10 秒內再略推。
+  const t=Math.max(0,Math.min(60,phaseTime()));
+  let gold,silver;
+  if(t>20){
+    const p=(60-t)/40;            // 60→20 秒：0→1
+    gold=.075-(.025*p);           // 7.5% → 5.0%
+    silver=.028+(.012*p);         // 2.8% → 4.0%
+  }else if(t>10){
+    const p=(20-t)/10;            // 20→10 秒：0→1
+    gold=.050-(.015*p);           // 5.0% → 3.5%
+    silver=.040+(.018*p);         // 4.0% → 5.8%
+  }else{
+    const p=(10-t)/10;            // 10→0 秒：0→1
+    gold=.035-(.010*p);           // 3.5% → 2.5%
+    silver=.058+(.022*p);         // 5.8% → 8.0%
+  }
+  return {gold,silver};
+}
+
+function specialDelay(kind){
+  // Hard V0.4.24: dedicated 30-second gold/silver economy.
+  // phaseTime() maps the 30s round onto the old 60s curve, but real delays must be
+  // shortened independently; otherwise the 30s round only gets ~half the specials.
+  const t=Math.max(0,Math.min(60,phaseTime()));
+  if(kind==='gold'){
+    if(t>40)return 1700+Math.random()*900;     // first 10s: strongest, ~4–5 gold incl. initial
+    if(t>20)return 3000+Math.random()*1300;    // middle 10s: recedes
+    if(t>10)return 4300+Math.random()*1500;    // late: scarce
+    return 5200+Math.random()*1800;            // final 5s: very scarce
+  }
+  if(t>40)return 5200+Math.random()*1800;      // silver early: restrained
+  if(t>20)return 3600+Math.random()*1400;      // starts rising
+  if(t>10)return 2200+Math.random()*900;       // last 10s: useful
+  return 1700+Math.random()*700;                // final 5s: strongest
+}
+function scheduleSpecial(kind,initial=false){
+  const delay=initial ? (kind==='gold'?650+Math.random()*650:3600+Math.random()*1600) : specialDelay(kind);
+  const fn=()=>{
+    if(!running)return;
+    const on=balls.some(o=>!o.dead&&o.type===kind);
+    const densityCap=(kind==='gold'&&phaseTime()>40)?24:18; // V0.4.15: early gold is not suppressed by dense-wave population
+    if(!on && balls.length<densityCap) spawn(true,{forceType:kind});
+    // If one is still on screen, do not stack another; retry soon without losing the independent clock.
+    if(kind==='gold')goldTimer=setTimeout(()=>scheduleSpecial('gold'),on?900+Math.random()*700:0);
+    else silverTimer=setTimeout(()=>scheduleSpecial('silver'),on?900+Math.random()*700:0);
+  };
+  if(kind==='gold')goldTimer=setTimeout(fn,delay);else silverTimer=setTimeout(fn,delay);
+}
+function scheduleWind(initial=false){
+  // Hard V0.3.1: 1–2 super-wind events. Long cooldown prevents V0.3's over-triggering.
+  if(windEvents>=windMaxEvents){nextWindAt=Infinity;return;}
+  const delay=initial ? (5500+Math.random()*4500) : (9500+Math.random()*4500);
+  nextWindAt=Date.now()+delay;
+  windBaitPending=false;windBaitAt=0;
+}
+
+function scheduleBurst(initial=false){
+  if(burstEvents>=burstMaxEvents){nextBurstAt=Infinity;return;}
+  const delay=initial?(4500+Math.random()*3000):(6750+Math.random()*4250);
+  nextBurstAt=Date.now()+delay;
+}
+function startBurstWave(){
+  if(!running||burstEvents>=burstMaxEvents)return;
+  if(windActive||rainActive||trapRainActive){nextBurstAt=Date.now()+1800;return;}
+  burstEvents++;
+  const target=22+Math.floor(Math.random()*3); // 22–24 balls on screen at burst peak
+  const want=Math.max(7,Math.min(11,target-balls.length));
+  let i=0;
+  clearInterval(burstTimer);
+  burstTimer=setInterval(()=>{
+    if(!running){clearInterval(burstTimer);return;}
+    if(i>=want||balls.length>=target){clearInterval(burstTimer);return;}
+    spawn(true);
+    i++;
+  },70+Math.random()*35);
+  scheduleBurst(false);
+}
+
+function scheduleTrapRain(initial=false){
+  // Hard V0.4.23: 2–3 unknown rain waves. Timing and wave type are hidden from the player.
+  if(trapRainEvents>=trapRainMaxEvents)return;
+  const gap=initial ? (3200+Math.random()*3200) : (2800+Math.random()*3000);
+  nextTrapRainAt=Date.now()+gap;
+}
+function buildTrapRainPlan(count){
+  const kinds=['trap','mixed','reward'];
+  const plan=[];
+  for(let i=0;i<count;i++) plan.push(kinds[Math.floor(Math.random()*kinds.length)]);
+  // Two or more waves may never all be the same type; otherwise the player could learn the round after wave one.
+  if(count>1 && plan.every(x=>x===plan[0])){
+    const alternatives=kinds.filter(x=>x!==plan[0]);
+    plan[1]=alternatives[Math.floor(Math.random()*alternatives.length)];
+  }
+  // Shuffle so the forced diversity does not always land in wave two.
+  for(let i=plan.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[plan[i],plan[j]]=[plan[j],plan[i]];}
+  return plan;
+}
+function startTrapRain(){
+  if(!running||trapRainEvents>=trapRainMaxEvents||trapRainActive)return;
+  if(windActive||rainActive){nextTrapRainAt=Date.now()+900+Math.random()*1400;return;}
+  trapRainActive=true;
+  const waveKind=trapRainPlan[trapRainEvents]||'mixed';
+  trapRainEvents++;
+  if(waveKind==='trap')trapRainTrapWaves++;else if(waveKind==='reward')trapRainRewardWaves++;else trapRainMixedWaves++;
+
+  const total=35+Math.floor(Math.random()*11); // 35–45 balls
+  const opening=Math.min(total,15+Math.floor(Math.random()*6));
+  // The three waves look identical on entry. Only their hidden composition changes.
+  // trap: 80% no-plus; mixed: 55% no-plus; reward: 30% no-plus (70% plus).
+  const negRatio=waveKind==='trap'?.80:(waveKind==='mixed'?.55:.30);
+  const negativeCount=Math.round(total*negRatio);
+  const openingNegative=Math.round(opening*negRatio);
+  const tailNegative=negativeCount-openingNegative;
+  const duration=5000+Math.random()*1000;
+
+  const openingComp=[...Array(openingNegative).fill(true),...Array(opening-openingNegative).fill(false)];
+  const tailLen=total-opening;
+  const tailComp=[...Array(Math.max(0,tailNegative)).fill(true),...Array(Math.max(0,tailLen-tailNegative)).fill(false)];
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const composition=[...shuffle(openingComp),...shuffle(tailComp)];
+
+  const started=Date.now();
+  let made=0;
+  clearInterval(trapRainTimer);
+  const emitOne=()=>{
+    if(!running||made>=total)return;
+    const isNegative=composition[made++];
+    const trapCluster=Math.floor(Math.random()*3);
+    if(isNegative){trapRainNegSpawned++;spawn(true,{mixBlack:true,entrySide:2,trapRain:true,trapCluster});}
+    else{trapRainPosSpawned++;spawn(true,{forceScore:true,entrySide:2,trapRain:true,trapCluster});}
+  };
+
+  let openingMade=0;
+  const openingTimer=setInterval(()=>{
+    if(!running||openingMade>=opening||made>=total){clearInterval(openingTimer);return;}
+    const batch=Math.min(opening-openingMade,2+Math.floor(Math.random()*2));
+    for(let i=0;i<batch;i++){emitOne();openingMade++;}
+  },105+Math.random()*25);
+
+  setTimeout(()=>{
+    if(!running)return;
+    trapRainTimer=setInterval(()=>{
+      if(!running){clearInterval(trapRainTimer);return;}
+      const elapsed=Date.now()-started;
+      const remaining=total-made;
+      if(remaining<=0 || elapsed>=duration){
+        while(running&&made<total)emitOne();
+        clearInterval(trapRainTimer);
+        trapRainActive=false;
+        if(running&&trapRainEvents<trapRainMaxEvents&&time>5)scheduleTrapRain(false);
+        return;
+      }
+      const batch=Math.min(remaining,1+(Math.random()<.38?1:0));
+      for(let i=0;i<batch;i++)emitOne();
+    },250+Math.random()*70);
+  },900);
+}
+
+function spawnWindBait(){
+  // Temptation event: two normal-sized exposed +10s appear shortly before SOME winds.
+  // The wind is pre-scheduled; it never reacts to the player's tap.
+  if(!running||windActive)return;
+  windBaitEvents++;
+  for(let i=0;i<2;i++) setTimeout(()=>{
+    if(!running||windActive)return;
+    spawn(true,{bait10:true,baitIndex:i});
+  },i*120);
+}
+function startWind(){
+  if(!running||windActive||windEvents>=windMaxEvents)return;
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]],d=dirs[Math.floor(Math.random()*dirs.length)];
+  windDirX=d[0];windDirY=d[1];windActive=true;windEvents++;windBaitPending=false;
+  const {W,H}=bounds();
+  // Candle-blow model: the gust has a source just outside one edge and opens as a fan across the field.
+  if(d[0]>0){windSourceX=-W*.18;windSourceY=H*(.28+Math.random()*.44)}
+  else if(d[0]<0){windSourceX=W*1.18;windSourceY=H*(.28+Math.random()*.44)}
+  else if(d[1]>0){windSourceX=W*(.22+Math.random()*.56);windSourceY=-H*.16}
+  else {windSourceX=W*(.22+Math.random()*.56);windSourceY=H*1.16}
+  const dur=3300+Math.random()*1700;windUntil=Date.now()+dur;
+  const angle=d[0]!==0?0:90;windfx.style.setProperty('--wind-angle',angle+'deg');
+  windfx.classList.add('show');windbadge.classList.add('show');
+  windbadge.textContent=d[0]>0?'🌪️ 超強風 →':d[0]<0?'🌪️ 超強風 ←':d[1]>0?'🌪️ 超強風 ↓':'🌪️ 超強風 ↑';
+  for(const o of balls){
+    if(o.dead)continue;
+    o.windFactor=.95+Math.random()*.85;
+    o.windCross=(Math.random()*2-1)*(55+Math.random()*105);
+    // V0.4.2: some balloons are caught by the core gust and are likely to be cleared off-screen.
+    o.windClear=Math.random()<.42 ? (1.55+Math.random()*.70) : (1.0+Math.random()*.25);
+    o.windJitter=Math.random()*Math.PI*2;
+    // Immediate fan-shaped impulse: like blowing candles, nearby formations split at once instead of sliding together.
+    const cx=o.x+(o.b.offsetWidth||76)/2,cy=o.y+(o.b.offsetHeight||72)/2;
+    let rx=cx-windSourceX,ry=cy-windSourceY,rl=Math.hypot(rx,ry)||1;rx/=rl;ry/=rl;
+    const burst=(155+Math.random()*150)*(o.windClear||1);
+    o.vx+=rx*burst + (-ry)*o.windCross*.35;
+    o.vy+=ry*burst + ( rx)*o.windCross*.35;
+    if(o.type==='black'){o.escortTarget=null;o.escortUntil=0;}
+  }
+}
+function stopWind(){
+  windActive=false;windDirX=windDirY=0;windfx.classList.remove('show');windbadge.classList.remove('show');
+  for(const o of balls){o.windFactor=1;o.windCross=0;o.windClear=1;}
+  scheduleWind(false);
+}
+function scheduleRain(initial=false){
+  if(rainEvents>=rainMaxEvents){nextRainAt=Infinity;return;}
+  // First rain is intentionally unpredictable but kept away from the opening seconds.
+  const delay=initial ? (8500+Math.random()*9500) : (11000+Math.random()*4500);
+  nextRainAt=Date.now()+delay;
+}
+function startRain(){
+  if(!running||rainActive||windActive||rainEvents>=rainMaxEvents)return;
+  rainActive=true;rainEvents++;rainUntil=Date.now()+5000+Math.random()*2000;
+  rainfx.classList.add('show');rainbadge.classList.add('show');note('🌧️ 大雨！球變慢，趁現在搶分！');
+}
+function stopRain(){
+  rainActive=false;rainfx.classList.remove('show');rainbadge.classList.remove('show');scheduleRain(false);
+}
+function hud(){scoreEl.textContent=score;timeEl.textContent=time;ammoEl.textContent=ammo}
+function note(t){msg.textContent=t;msg.classList.add('show');clearTimeout(msg._t);msg._t=setTimeout(()=>msg.classList.remove('show'),900)}
+function bounds(){const W=g.clientWidth,H=g.clientHeight;const safe=Math.max(92,legend.offsetWidth+12);return {W,H,right:Math.max(125,W-safe-6),top:4,bottom:H-10}}
+function speedFor(type,val,sizeMul){
+  // 一般模式：刺激靠多目標追逐與取捨，不靠把 +10 做成閃電。
+  // +10 仍最難，但只比 +5 快一階；金銀與高分球接近，避免資源球變送分。
+  let base,spread;
+  if(type==='gold'||type==='silver'){base=242;spread=48}
+  else if(type==='black'){base=222;spread=44}
+  else if(val===10){base=270;spread=54}
+  else if(val===5){base=242;spread=48}
+  else if(val===3){base=218;spread=44}
+  else if(val===2){base=188;spread=38}
+  else{base=164;spread=34}
+  // 尺寸只做輕微速度傾向，不讓「小球 = 必定超高速」。
+  const sizeBoost=sizeMul<.8?1.08:(sizeMul<.95?1.03:.98);
+  return (base+Math.random()*spread)*sizeBoost;
+}
+function pickSize(){
+  // 所有分數與特殊球都共用同一尺寸池，分數不綁尺寸。
+  const r=Math.random();
+  if(r<.22)return .70;
+  if(r<.62)return .86;
+  return 1.0;
+}
+function pickNegativeScore(){
+  const r=Math.random();
+  if(r<.50)return 5;
+  if(r<.75)return 3;
+  if(r<.90)return 10;
+  return 1;
+}
+function applyCrackedHeartVisual(b,negVal){
+  const camo=['camopink','camoblue','camogreen','camopurple','camoorange'][Math.floor(Math.random()*5)];
+  b.classList.add('black','mixblack',camo);
+  return `<span class="blackmark"><span class="scorefake">${negVal}</span></span>`;
+}
+function spawn(force=false,opts={}){
+  if(!running)return;if(balls.length>=16&&!force)return;
+  const {H,right}=bounds();
+  const b=document.createElement('div');b.className='balloon';
+  let type='score',label,val=0;const r=Math.random(),rates=specialRates();
+  const goldOn=balls.some(o=>!o.dead&&o.type==='gold'), silverOn=balls.some(o=>!o.dead&&o.type==='silver'), blackOn=balls.some(o=>!o.dead&&o.type==='black');
+  const scoreCount=balls.filter(o=>!o.dead&&o.type==='score').length;
+  const bait10=!!opts.bait10;
+  const mixBlack=!!opts.mixBlack;
+  const ambushBlack=!!opts.ambushBlack;
+  const trapRain=!!opts.trapRain;
+  const trapCluster=Number.isInteger(opts.trapCluster)?opts.trapCluster:Math.floor(Math.random()*3);
+  const forceType=opts.forceType||'';
+  const forceScore=!!opts.forceScore;
+  const escort10 = !bait10 && pendingBlack10 && !pendingBlack10.dead && !blackOn;
+  const cover10 = pendingCover10 && !pendingCover10.dead;
+  const decision10 = pendingDecisionSilver && !pendingDecisionSilver.dead && phaseTime()<=20 && !blackOn;
+  if(mixBlack){type='black';val=pickNegativeScore();label=applyCrackedHeartVisual(b,val);mixBlackSpawned++;}
+   else if(forceType==='gold'){type='gold';b.classList.add('gold');label='🔫 ?'}
+  else if(forceType==='silver'){type='silver';b.classList.add('silver');label='⏱ +3'}
+  else if(bait10){type='score';val=10;b.classList.add(colors[(spawnSeq+Number(opts.baitIndex||0))%colors.length]);label='+10'}
+  else if(forceScore){type='score';val=pickScore();b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+'+val}
+  else if(cover10){
+    type='score';val=[1,2,3][Math.floor(Math.random()*3)];b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+'+val;
+  }
+  else if(escort10){
+    type='black';val=pickNegativeScore();label=applyCrackedHeartVisual(b,val);
+  }
+  else if(decision10){type='score';val=10;b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+10'}
+  else if(scoreCount>=4 && r<.05 && !blackOn){type='black';val=pickNegativeScore();label=applyCrackedHeartVisual(b,val)}
+  else{val=pickScore();b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+'+val}
+  let hidden10=false;
+  if(type==='score'&&val===10&&!bait10&&!decision10&&!cover10&&!trapRain&&Math.random()<.45){hidden10=true;hidden10Spawned++;}
+  if(type==='gold'){goldSpawned++;if(phaseTime()>40)goldEarlySpawned++;}
+  if(type==='silver'){silverSpawned++;if(phaseTime()<=20)silverLateSpawned++;if(phaseTime()<=10)silverLast10Spawned++;}
+  if(type==='black'){if(val===5)neg5Spawned++;else if(val===3)neg3Spawned++;else if(val===10)neg10Spawned++;else if(val===1)neg1Spawned++;}
+  b.innerHTML=type==='black'?label:'<span>'+label+'</span>';
+  const closeBlack=escort10 && Math.random()<.48;
+  const sizeMul=mixBlack ? (ambushBlack ? (Math.random()<.72?.78:.86) : (Math.random()<.65?.86:1.0)) : (bait10 ? 1.0 : (hidden10 ? .54 : (cover10 ? (Math.random()<.55?1.0:.86) : (closeBlack ? .78 : pickSize()))));
+  b.style.width=(76*sizeMul)+'px';b.style.height=(72*sizeMul)+'px';
+  b.style.fontSize=(22*Math.max(.76,sizeMul))+'px';
+  g.appendChild(b);
+  const bw=b.offsetWidth||76,bh=b.offsetHeight||72;
+  // Rotate entry sides with a shuffled offset so all four edges stay active.
+  let side=(spawnSeq++ + Math.floor(Math.random()*2))%4;
+   if(Number.isInteger(opts.entrySide)) side=opts.entrySide;
+  // 後期三方抉擇：銀球在一側時，事件 +10 從相反邊進場，迫使視線選邊。
+  if(decision10){const ss=pendingDecisionSilver.entrySide;side=ss===0?1:ss===1?0:ss===2?3:2;}
+  // 倒數 20 秒後的銀球用較刁鑽的「推入」感：只小幅加速，不做瞬移或點擊閃避。
+  const pt=phaseTime();
+  const silverLateBoost=type==='silver'?(pt<=10?1.12:(pt<=20?1.07:1)):1;
+  const s=speedFor(type,val,sizeMul)*silverLateBoost;
+  const yMin=28,yMax=Math.max(100,H-bh-24),xMax=Math.max(70,right-bw);
+  let x,y;
+  if(cover10){
+    const t=pendingCover10;
+    const tsp=Math.max(1,Math.hypot(t.vx,t.vy)),ux=t.vx/tsp,uy=t.vy/tsp;
+    const edge=(Math.random()<.5?-1:1)*(14+Math.random()*10);
+    x=t.x + (-uy)*edge - bw*.18; y=t.y + (ux)*edge - bh*.16;
+  }
+  else if(escort10){
+    // About 40% of +10s can call in one nearby black-heart balloon.
+    // Spawn close enough to create hesitation, but not directly on top of the +10.
+    const t=pendingBlack10;
+    // Put the black-heart on one side of the +10 path, then steer it toward a point
+    // slightly ahead of the +10. This creates a visible crossing instead of two balls
+    // that merely happen to spawn near each other.
+    const tsp=Math.max(1,Math.hypot(t.vx,t.vy)), ux=t.vx/tsp, uy=t.vy/tsp;
+    const sideSign=Math.random()<.5?-1:1, gap=closeBlack?(24+Math.random()*16):(82+Math.random()*28), ahead=closeBlack?(-4+Math.random()*18):(18+Math.random()*24);
+    x=Math.max(-bw-6,Math.min(right+8,t.x + ux*ahead + (-uy)*gap*sideSign));
+    y=Math.max(-bh-6,Math.min(H+8,t.y + uy*ahead + ( ux)*gap*sideSign));
+  }
+  else if(side===0){x=-bw-8;y=yMin+Math.random()*(yMax-yMin)}
+  else if(side===1){x=right+10;y=yMin+Math.random()*(yMax-yMin)}
+  else if(side===2){x=Math.random()*xMax;y=-bh-10}
+  else{x=Math.random()*xMax;y=H+10}
+  // Hard V0.4.19: surprise-rain balls enter in a few crowded columns instead of evenly
+  // spreading across the width. Positive and negative balls share the same columns,
+  // creating brief occlusion and hand-eye confusion rather than a clean '+' search.
+  if(trapRain){
+    const cols=[.23,.50,.77];
+    x=Math.max(-bw*.15,Math.min(xMax,cols[trapCluster]*xMax + (Math.random()-.5)*Math.min(52,xMax*.12)));
+    y=-bh-(Math.random()*70);
+  }
+
+  // V0.8: don't let the whole flock drift into one band. Aim each new balloon toward
+  // a lightly occupied height zone, while still giving every balloon its own diagonal path.
+  const zones=[0,0,0];
+  const usableH=Math.max(180,H-bh-40);
+  for(const o of balls){
+    const cy=Math.max(0,Math.min(usableH,o.y+36));
+    zones[Math.min(2,Math.floor(cy/(usableH/3)))]++;
+  }
+  const minCount=Math.min(...zones);
+  const candidates=zones.map((n,i)=>n===minCount?i:-1).filter(i=>i>=0);
+  const zone=candidates[Math.floor(Math.random()*candidates.length)];
+  let targetY=30+(zone+0.15+Math.random()*0.70)*(usableH/3);
+  let targetX=18+Math.random()*Math.max(60,xMax-18);
+  if(trapRain){
+    // Cross toward a neighboring column so streams weave through each other.
+    const cross=(trapCluster+(Math.random()<.5?1:2))%3;
+    const cols=[.23,.50,.77];
+    targetX=cols[cross]*xMax + (Math.random()-.5)*70;
+    targetY=H*(.55+Math.random()*.30);
+  }
+  let dx=targetX-x,dy=targetY-y;
+  let angle=Math.atan2(dy,dx);
+  // Add a modest random fan so paths aren't mechanical, but keep the empty-zone bias.
+  angle+=(Math.random()-.5)*0.55;
+  let vx=Math.cos(angle)*s,vy=Math.sin(angle)*s;
+  // Hard V0.4.10: a normal-looking coloured plain-5 ambush balloon is pre-aimed through the attractive target's eye/hand lane.
+  // It never reacts to a tap; the route is fixed at spawn time.
+  if(ambushBlack && Number.isFinite(opts.targetX) && Number.isFinite(opts.targetY)){
+    const aa=Math.atan2(opts.targetY-y,opts.targetX-x)+(Math.random()-.5)*.16;
+    const asp=s*(1.05+Math.random()*.08);
+    vx=Math.cos(aa)*asp;vy=Math.sin(aa)*asp;
+  }
+  if(cover10){
+    const t=pendingCover10;vx=t.vx*.96;vy=t.vy*.96;
+  }
+  else if(escort10){
+    // Cross the +10's route instead of chasing it exactly; this keeps the challenge fair.
+    const t=pendingBlack10;
+    const lead=.42+Math.random()*.22;
+    const ix=t.x+t.vx*lead, iy=t.y+t.vy*lead;
+    const ta=Math.atan2(iy-y,ix-x);
+    vx=Math.cos(ta)*s;vy=Math.sin(ta)*s;
+  }
+  const obj={b,type,val,dead:false,x,y,vx,vy,phase:Math.random()*Math.PI*2,wobble:4+Math.random()*5,
+    steer:(Math.random()<.5?-1:1)*(0.14+Math.random()*0.24),age:0,bounces:0,retarget:.82+Math.random()*1.08,sizeMul,entrySide:side,
+    speedPhase:Math.random()*Math.PI*2,speedRate:1.35+Math.random()*1.25,baseSpeed:s,escortTarget:escort10?pendingBlack10:null,escortUntil:escort10?(closeBlack?2.05:1.65):0,hidden10,coverTarget:cover10?pendingCover10:null,windFactor:.62+Math.random()*.78,windClear:1,windCross:(Math.random()*2-1)*120,windJitter:Math.random()*Math.PI*2,bait10,closeBlack,mixBlack,ambushBlack,trapRain,trapCluster,trapWeave:(Math.random()<.5?-1:1)*(28+Math.random()*34),trapWeaveRate:4.2+Math.random()*2.6};
+  b.style.transform=`translate3d(${x}px,${y}px,0)`;balls.push(obj);
+  if(cover10) pendingCover10=null;
+  if(escort10) pendingBlack10=null;
+  if(hidden10){pendingCover10=obj;setTimeout(()=>{if(running&&pendingCover10===obj&&!obj.dead)spawn(true);else if(pendingCover10===obj)pendingCover10=null},90+Math.random()*90);}
+  if(decision10){
+    pendingDecisionSilver=null;
+    // 此事件的 +10 必定帶一顆黑心，黑心仍沿用既有交叉/黏著干擾方式。
+    pendingBlack10=obj;
+    setTimeout(()=>{if(running&&pendingBlack10===obj&&!obj.dead)spawn(true);else if(pendingBlack10===obj)pendingBlack10=null},150+Math.random()*180);
+  }
+  // 後 20 秒銀球偶爾觸發「另一方向 +10＋黑心」；越接近結束只小幅增加，不是每顆必出。
+  if(type==='silver'&&time<=20&&!blackOn&&!pendingBlack10&&!pendingDecisionSilver){
+    const lateP=time<=10 ? (.32+(10-time)*.01) : (.20+(20-time)*.012);
+    if(Math.random()<lateP){pendingDecisionSilver=obj;setTimeout(()=>{if(running&&pendingDecisionSilver===obj&&!obj.dead)spawn(true);else if(pendingDecisionSilver===obj)pendingDecisionSilver=null},170+Math.random()*220);}
+  }
+  // Hard V0.2.1: roughly 65% of exposed +10 balloons invite a black-heart; hidden +10 uses low-score cover instead.
+  // The black ball is still capped at one on screen, so this cannot turn into a black-ball swarm.
+  if(type==='score'&&val===10&&!bait10&&!decision10&&!hidden10&&!trapRain&&!blackOn&&Math.random()<.65){
+    pendingBlack10=obj;
+    setTimeout(()=>{if(running&&pendingBlack10===obj&&!obj.dead)spawn();else if(pendingBlack10===obj)pendingBlack10=null},180+Math.random()*260);
+  }
+  // Hard V0.4.10: fewer coloured plain-5 ambushes with deliberate timing. After an attractive +5/+10,
+   // a black heart may follow the same visual lane shortly afterward. Maximum 3–4 planned ambushes per round.
+   // This is pre-scheduled and never triggered by the player's pointer/tap.
+   if(type==='score' && (val===5||val===10) && !hidden10 && !bait10 && !decision10 && !trapRain && !blackOn && ambushBlackPlanned<ambushBlackMax && Math.random()<.18){
+     const laneX=targetX,laneY=targetY,laneSide=side;
+     ambushBlackPlanned++;
+     setTimeout(()=>{
+       if(!running || balls.some(q=>!q.dead&&q.type==='black'))return;
+       spawn(true,{mixBlack:true,ambushBlack:true,entrySide:laneSide,targetX:laneX,targetY:laneY});
+     },90+Math.random()*90);
+   }
+   b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();shoot(obj,e.clientX,e.clientY)});
+}
+function remove(o){if(o.dead)return;o.dead=true;o.b.remove();balls=balls.filter(x=>x!==o)}
+function motion(ts){
+  if(!running)return;const dt=Math.min(.034,(ts-(lastTs||ts))/1000);lastTs=ts;const {H,right}=bounds();
+  const now=Date.now();
+  if(time>7 && burstEvents<burstMaxEvents && now>=nextBurstAt) startBurstWave();
+  if(trapRainEvents<trapRainMaxEvents && now>=nextTrapRainAt) startTrapRain();
+  if(!windActive&&time>6&&windEvents<windMaxEvents){
+    const lead=nextWindAt-now;
+    // Only some winds get the double-+10 temptation; no fixed tell for every gust.
+    if(!windBaitPending&&lead>520&&lead<1050&&Math.random()<.38){windBaitPending=true;windBaitAt=now;spawnWindBait();}
+    if(now>=nextWindAt){if(rainActive)nextWindAt=now+1800;else startWind();}
+  }
+  if(windActive&&now>=windUntil)stopWind();
+  if(!rainActive&&rainEvents<rainMaxEvents&&now>=nextRainAt){
+    if(windActive) nextRainAt=now+1800; else startRain();
+  }
+  if(rainActive&&now>=rainUntil)stopRain();
+  for(const o of [...balls]){
+    if(o.dead)continue;
+    o.age+=dt;o.phase+=dt*2.7;o.retarget-=dt;o.speedPhase+=dt*o.speedRate;
+
+    // V0.12: no sudden burst/teleport feeling. Valuable targets stay fast, but accelerate/decelerate continuously.
+    let pulse=0;
+    if(o.type!=='score') pulse=.10+.10*(.5+.5*Math.sin(o.speedPhase));
+    else if(o.val===10) pulse=.07+.10*(.5+.5*Math.sin(o.speedPhase));
+    else if(o.val===5) pulse=.05+.08*(.5+.5*Math.sin(o.speedPhase));
+    else if(o.val===3) pulse=.03+.06*(.5+.5*Math.sin(o.speedPhase));
+    let desiredSpeed=o.baseSpeed*(1+pulse);
+    // Rain is a scoring window: most balloons get heavy/slower, while black hearts retain nearly all speed.
+    if(rainActive) desiredSpeed*=o.type==='black'?.93:.70;
+    const currentSpeed=Math.max(1,Math.hypot(o.vx,o.vy));
+    const blend=Math.min(1,dt*3.8);
+    const newSpeed=currentSpeed+(desiredSpeed-currentSpeed)*blend;
+    o.vx=o.vx/currentSpeed*newSpeed;o.vy=o.vy/currentSpeed*newSpeed;
+
+    // Paired black-heart event: for the first moment, keep steering toward a
+    // predicted +10 position so the two paths visibly converge/cross. The target
+    // remains tappable; the black-heart is not glued to it and separates afterward.
+    if(o.type==='black' && o.escortTarget && !o.escortTarget.dead && o.age<o.escortUntil){
+      const t=o.escortTarget, lead=Math.max(.10,.48-o.age*.16);
+      const tx=t.x+t.vx*lead, ty=t.y+t.vy*lead;
+      const desired=Math.atan2(ty-o.y,tx-o.x),cur=Math.atan2(o.vy,o.vx);
+      let diff=((desired-cur+Math.PI*3)%(Math.PI*2))-Math.PI;
+      const steerCap=o.closeBlack?1.48:1.05;
+      diff=Math.max(-steerCap,Math.min(steerCap,diff));
+      const sp=Math.hypot(o.vx,o.vy),a=cur+diff*Math.min(1,dt*(o.closeBlack?8.8:5.8));
+      o.vx=Math.cos(a)*sp;o.vy=Math.sin(a)*sp;
+      o.retarget=.35;
+    }
+    // Periodically bias toward a less occupied vertical third, but do not let that
+    // logic break an active +10/black-heart crossing event.
+    else if(o.retarget<=0){
+      const thirds=[0,0,0],usable=Math.max(180,H-90);
+      for(const q of balls){if(q.dead)continue;const yy=Math.max(0,Math.min(usable,q.y+36));thirds[Math.min(2,Math.floor(yy/(usable/3)))]++;}
+      const m=Math.min(...thirds),cs=thirds.map((n,i)=>n===m?i:-1).filter(i=>i>=0),z=cs[Math.floor(Math.random()*cs.length)];
+      const ty=24+(z+0.2+Math.random()*0.6)*(usable/3),tx=20+Math.random()*Math.max(50,right-110);
+      const desired=Math.atan2(ty-o.y,tx-o.x),cur=Math.atan2(o.vy,o.vx);
+      let diff=((desired-cur+Math.PI*3)%(Math.PI*2))-Math.PI;
+      diff=Math.max(-0.58,Math.min(0.58,diff));
+      const sp=Math.hypot(o.vx,o.vy),a=cur+diff*0.32;o.vx=Math.cos(a)*sp;o.vy=Math.sin(a)*sp;
+      o.retarget=.90+Math.random()*1.20;
+    }
+
+    // Hard V0.4.19: during the surprise rain, streams weave across each other for the
+    // first few seconds. The motion is precomputed/random, never reactive to taps.
+    if(o.trapRain && o.age<6.8){
+      const sp=Math.max(1,Math.hypot(o.vx,o.vy));
+      const px=-o.vy/sp,py=o.vx/sp;
+      const weave=Math.sin(o.age*o.trapWeaveRate + o.phase)*o.trapWeave;
+      o.vx+=px*weave*dt*3.0;
+      o.vy+=py*weave*dt*3.0;
+    }
+    const turn=o.steer*dt;
+    const c=Math.cos(turn),sn=Math.sin(turn),nvx=o.vx*c-o.vy*sn,nvy=o.vx*sn+o.vy*c;
+    o.vx=nvx;o.vy=nvy;
+    // Candle-blow super wind: force radiates from an off-screen source, so upper/lower balls fan apart instead of piling up.
+    let mx=o.vx,my=o.vy;
+    if(windActive){
+      const bw0=o.b.offsetWidth||76,bh0=o.b.offsetHeight||72;
+      const cx=o.x+bw0/2,cy=o.y+bh0/2;
+      let rx=cx-windSourceX,ry=cy-windSourceY,rl=Math.hypot(rx,ry)||1;rx/=rl;ry/=rl;
+      const flutter=Math.sin(now*.013+o.windJitter)*52;
+      const force=285*o.windFactor*(o.windClear||1);
+      mx+=rx*force + (-ry)*(o.windCross+flutter);
+      my+=ry*force + ( rx)*(o.windCross+flutter);
+      const ms=Math.hypot(mx,my),minMove=215;
+      if(ms<minMove){mx+=rx*(minMove-ms);my+=ry*(minMove-ms);}
+    }
+    o.x+=mx*dt;o.y+=my*dt;
+    const drawX=o.x+Math.cos(o.phase*.83)*o.wobble*.45;
+    const drawY=o.y+Math.sin(o.phase)*o.wobble;
+    o.b.style.transform=`translate3d(${drawX}px,${drawY}px,0)`;
+    const bw=o.b.offsetWidth||76,bh=o.b.offsetHeight||72;
+
+    // Low-value balloons may bounce once; valuable targets mostly cross the field and escape.
+    if(!windActive && o.age>.52 && o.bounces<1 && !(o.type!=='score'||o.val>=5)){
+      let bounced=false;
+      if(o.x<0 && o.vx<0){o.x=0;o.vx=Math.abs(o.vx);bounced=true}
+      else if(o.x>right-bw && o.vx>0){o.x=right-bw;o.vx=-Math.abs(o.vx);bounced=true}
+      if(o.y<0 && o.vy<0){o.y=0;o.vy=Math.abs(o.vy);bounced=true}
+      else if(o.y>H-bh-6 && o.vy>0){o.y=H-bh-6;o.vy=-Math.abs(o.vy);bounced=true}
+      if(bounced)o.bounces++;
+    }
+    if(o.x<-bw-38||o.x>right+42||o.y<-bh-42||o.y>H+42) remove(o);
+  }
+  raf=requestAnimationFrame(motion);
+}
+
+function shoot(o,cx,cy){
+  if(!running||o.dead||ammo<=0)return;shots++;ammo--;hits++;let text='';
+  if(o.type==='score'){score+=o.val;if(o.hidden10)hidden10Hits++;text='+'+o.val}
+  else if(o.type==='gold'){goldHits++;if(Math.random()<.55){goldWins++;ammo+=3;text='🔫 +3';note('補到 3 發子彈！')}else{goldBlanks++;text='💨 空包';note('空包！')}}
+  else if(o.type==='silver'){time+=3;text='⏱ +3';note('時間 +3 秒！')}
+  else if(o.type==='black'){score-=o.val;blackHits++;if(o.trapRain)trapRainNegHits++;if(o.val===5)neg5Hits++;else if(o.val===3)neg3Hits++;else if(o.val===10)neg10Hits++;else if(o.val===1)neg1Hits++;if(o.mixBlack)mixBlackHits++;text='-'+o.val;note('誤射負分氣球，-'+o.val+' 分！')}
+  const rect=g.getBoundingClientRect(),p=document.createElement('div');p.className='pop';p.textContent=text;p.style.left=(cx-rect.left-20)+'px';p.style.top=(cy-rect.top-20)+'px';g.appendChild(p);setTimeout(()=>p.remove(),750);remove(o);hud();if(ammo<=0)setTimeout(finish,120)
+}
+function missShot(cx,cy){
+  if(!running||ammo<=0)return;
+  shots++;ammo--;
+  const rect=g.getBoundingClientRect(),p=document.createElement('div');p.className='pop';p.textContent='MISS';
+  p.style.left=(cx-rect.left-20)+'px';p.style.top=(cy-rect.top-20)+'px';p.style.opacity='.72';g.appendChild(p);setTimeout(()=>p.remove(),520);
+  hud();if(ammo<=0)setTimeout(finish,120);
+}
+g.addEventListener('pointerdown',e=>{
+  if(!running)return;
+  if(e.target.closest('.balloon'))return;
+  e.preventDefault();missShot(e.clientX,e.clientY);
+});
+
+function begin(){
+  clearTimeout(goldTimer);clearTimeout(silverTimer);balls.forEach(remove);score=0;time=GAME_DURATION;ammo=20;shots=hits=blackHits=mixBlackSpawned=mixBlackHits=neg5Spawned=neg3Spawned=neg10Spawned=neg1Spawned=neg5Hits=neg3Hits=neg10Hits=neg1Hits=goldHits=goldWins=goldBlanks=goldSpawned=silverSpawned=silverLateSpawned=goldEarlySpawned=silverLast10Spawned=hidden10Spawned=hidden10Hits=0;spawnSeq=Math.floor(Math.random()*4);pendingBlack10=null;pendingDecisionSilver=null;pendingCover10=null;windEvents=0;windBaitEvents=0;windActive=false;windDirX=windDirY=0;windMaxEvents=1+(Math.random()<.55?1:0);windBaitPending=false;windBaitAt=0;windfx.classList.remove('show');windbadge.classList.remove('show');rainActive=false;rainEvents=0;rainMaxEvents=1;ambushBlackPlanned=0;ambushBlackMax=3+(Math.random()<.5?1:0);burstEvents=0;burstMaxEvents=2+(Math.random()<.45?1:0);nextBurstAt=0;clearInterval(burstTimer);trapRainEvents=0;trapRainMaxEvents=2+Math.floor(Math.random()*2);trapRainPlan=buildTrapRainPlan(trapRainMaxEvents);nextTrapRainAt=0;trapRainActive=false;trapRainNegSpawned=trapRainPosSpawned=trapRainNegHits=0;trapRainTrapWaves=trapRainMixedWaves=trapRainRewardWaves=0;clearInterval(trapRainTimer);rainfx.classList.remove('show');rainbadge.classList.remove('show');running=true;gameStartedAt=performance.now();lastTs=0;scheduleWind(true);scheduleRain(true);scheduleBurst(true);scheduleTrapRain(true);scheduleSpecial('gold',true);scheduleSpecial('silver',true);hud();
+  document.getElementById('start').style.display='none';document.getElementById('end').classList.remove('show');
+  for(let i=0;i<11;i++)setTimeout(()=>spawn(true),i*125);
+  clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);raf=requestAnimationFrame(motion);
+  timer=setInterval(()=>{time--;hud();if(time<=0)finish()},1000);
+  spawnTimer=setInterval(()=>{if(!running||trapRainActive)return;if(balls.length<11){spawn();setTimeout(()=>{if(running&&!trapRainActive)spawn()},85)}else if(balls.length<15){spawn()}else if(balls.length<18&&Math.random()<.78)spawn()},260);
+}
+function finish(){
+  if(!running)return;running=false;clearInterval(timer);clearInterval(spawnTimer);clearInterval(burstTimer);clearInterval(trapRainTimer);clearTimeout(goldTimer);clearTimeout(silverTimer);cancelAnimationFrame(raf);trapRainActive=false;windActive=false;windDirX=windDirY=0;windfx.classList.remove('show');windbadge.classList.remove('show');rainActive=false;rainfx.classList.remove('show');rainbadge.classList.remove('show');balls.forEach(remove);
+  document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0,playedSeconds=gameStartedAt?Math.max(0,(performance.now()-gameStartedAt)/1000):0,playedText=playedSeconds.toFixed(1).replace(/\.0$/,'');document.getElementById('stats').textContent=`實際遊玩 ${playedText} 秒｜射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜負分出現 5:${neg5Spawned}・3:${neg3Spawned}・10:${neg10Spawned}・1:${neg1Spawned}｜負分誤射 5:${neg5Hits}・3:${neg3Hits}・10:${neg10Hits}・1:${neg1Hits}｜伏擊負分 ${mixBlackSpawned}｜伏擊誤射 ${mixBlackHits}｜剩餘 ${ammo} 發｜金球出現 ${goldSpawned}｜前10秒金球 ${goldEarlySpawned}｜金球命中 ${goldHits}｜補彈 ${goldWins}｜空包 ${goldBlanks}｜銀球出現 ${silverSpawned}｜後10秒銀球 ${silverLateSpawned}｜後5秒銀球 ${silverLast10Spawned}｜隱藏+10 ${hidden10Spawned}｜命中 ${hidden10Hits}｜超強風 ${windEvents} 次｜雙+10誘惑 ${windBaitEvents} 次｜大雨 ${rainEvents} 次｜密集波 ${burstEvents} 次｜真假球雨 ${trapRainEvents} 次｜陷阱雨 ${trapRainTrapWaves}・混亂雨 ${trapRainMixedWaves}・獎勵雨 ${trapRainRewardWaves}｜球雨無＋ ${trapRainNegSpawned}｜球雨有＋ ${trapRainPosSpawned}｜球雨負分誤射 ${trapRainNegHits}`;document.getElementById('end').classList.add('show')
+}
+// Mobile game: suppress browser zoom/gesture handling without changing gameplay.
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-lastTouchEnd<=300)e.preventDefault();
+  lastTouchEnd=now;
+},{passive:false});
+
+document.getElementById('go').onclick=begin;document.getElementById('again').onclick=begin;hud();
+})();
+</script>
+</body>
+</html>
