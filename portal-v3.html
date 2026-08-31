@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>歡迎來到遊戲活動中心</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#f9f3f8}
+body{overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+.portal{position:relative;width:100%;margin:0 auto;overflow:hidden;background:#f8f2f7}
+.art{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.mobile{display:none}
+.enter-hit{
+  position:absolute;z-index:5;text-decoration:none;border-radius:999px;
+  outline:none;-webkit-tap-highlight-color:transparent;
+  animation:breath 3.2s ease-in-out infinite;
+}
+.enter-hit:focus-visible{outline:4px solid rgba(255,255,255,.95);outline-offset:4px}
+.enter-hit::after{
+  content:"";position:absolute;inset:-5px;border-radius:inherit;
+  box-shadow:0 0 0 0 rgba(255,255,255,.15);animation:pulse 3.2s ease-in-out infinite;
+}
+.landscape-enter{left:28.6%;top:49.0%;width:35.8%;height:14.0%}
+
+/* Small floating overlays: the illustration remains the approved template;
+   these only add gentle motion without redrawing the whole artwork. */
+.float-balloon{
+  position:absolute;z-index:3;width:3.8%;aspect-ratio:.83;
+  border-radius:52% 52% 48% 48%;
+  opacity:.42;filter:blur(.15px);
+  box-shadow:inset -.35rem -.45rem .7rem rgba(75,92,130,.08),inset .35rem .35rem .7rem rgba(255,255,255,.65);
+  animation:float 7.8s ease-in-out infinite;
+}
+.float-balloon:before{
+  content:"";position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);
+  width:15%;height:9%;background:inherit;clip-path:polygon(50% 0,100% 100%,0 100%);
+}
+.float-balloon:after{
+  content:"";position:absolute;left:50%;top:100%;width:1px;height:110%;background:rgba(105,120,150,.22)
+}
+.fb1{left:25%;top:8%;background:#a8d7c9;animation-delay:-2.2s}
+.fb2{right:27%;top:8%;background:#f3aabe;animation-delay:-4.5s;animation-duration:9.1s}
+.spark{position:absolute;z-index:4;color:#fff;text-shadow:0 0 10px #fff;font-size:clamp(10px,1.5vw,22px);animation:twinkle 3.8s ease-in-out infinite}
+.s1{left:31%;top:12%}.s2{right:31%;top:14%;animation-delay:1.4s}.s3{left:23%;top:39%;animation-delay:2.1s}.s4{right:22%;top:42%;animation-delay:.7s}
+
+@keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.05)}50%{box-shadow:0 0 20px 5px rgba(255,255,255,.18)}}
+@keyframes float{0%,100%{transform:translate3d(0,0,0) rotate(-1deg)}50%{transform:translate3d(7px,-13px,0) rotate(2deg)}}
+@keyframes twinkle{0%,100%{opacity:.16;transform:scale(.8)}50%{opacity:.8;transform:scale(1.12)}}
+
+@media (max-aspect-ratio: 3/4){
+  .desktop{display:none}
+  .mobile{display:block}
+  .mobile-enter{display:block;left:15.3%;top:39.0%;width:69.5%;height:8.2%}
+  .landscape-enter{display:none}
+  .float-balloon{width:8.2%}
+  .fb1{left:7%;top:8.5%}.fb2{right:8%;top:12%}
+  .s1{left:30%;top:7%}.s2{right:25%;top:15%}.s3{left:12%;top:33%}.s4{right:12%;top:37%}
+}
+@media (min-aspect-ratio: 3/4){
+  .mobile-enter{display:none}
+  .portal{max-width:1536px}
+}
+@media (prefers-reduced-motion:reduce){
+  .enter-hit,.enter-hit::after,.float-balloon,.spark{animation:none!important}
+}
+</style>
+</head>
+<body>
+<main class="portal">
+  <img class="art desktop" src="./portal-landscape.png" alt="遊戲活動中心夢幻入口">
+  <img class="art mobile" src="./portal-mobile.png" alt="遊戲活動中心夢幻入口">
+  <a class="enter-hit landscape-enter" href="./index-v2.html" aria-label="點擊進入遊戲活動中心"></a>
+  <a class="enter-hit mobile-enter" href="./index-v2.html" aria-label="點擊進入遊戲活動中心"></a>
+
+  <i class="float-balloon fb1" aria-hidden="true"></i>
+  <i class="float-balloon fb2" aria-hidden="true"></i>
+  <span class="spark s1" aria-hidden="true">✦</span>
+  <span class="spark s2" aria-hidden="true">✧</span>
+  <span class="spark s3" aria-hidden="true">✦</span>
+  <span class="spark s4" aria-hidden="true">✧</span>
+</main>
+</body>
+</html>
