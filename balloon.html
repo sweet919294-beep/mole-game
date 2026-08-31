@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>射氣球 V0.14 局勢壓力版</title>
+<title>射氣球 V0.15 一般模式測試版</title>
 <style>
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -22,7 +22,7 @@ body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;back
 .card h1{margin:0 0 8px}.btn{border:0;background:#fff;border-radius:18px;padding:12px 24px;font-weight:900;font-size:18px;color:#31546a;box-shadow:0 4px 12px #5d829733}
 .balloon{position:absolute;width:76px;height:72px;border-radius:52% 52% 48% 48%;display:flex;align-items:center;justify-content:center;font-weight:1000;font-size:22px;color:#fff;text-shadow:0 2px 3px #0005;box-shadow:inset -8px -10px 14px #0002,inset 9px 9px 14px #fff7,0 5px 8px #56778933;user-select:none;-webkit-user-select:none;z-index:5;will-change:transform;touch-action:none}
 .balloon:after{content:'';position:absolute;bottom:-8px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid currentColor;filter:brightness(.85)}
-.gold{background:linear-gradient(135deg,#fff1a7,#d9a820);color:#d9a820}.silver{background:linear-gradient(135deg,#fff,#c9d0d5);color:#b8c0c6}.pink{background:#f38da5;color:#f38da5}.blue{background:#69aee8;color:#69aee8}.green{background:#70c995;color:#70c995}.purple{background:#a78adf;color:#a78adf}.orange{background:#f2a35e;color:#f2a35e}.balloon span{color:white;pointer-events:none}.silver span{color:#586c78;text-shadow:none}.gold span{color:#725511;text-shadow:none}
+.gold{background:linear-gradient(135deg,#fff1a7,#d9a820);color:#d9a820}.silver{background:linear-gradient(135deg,#fff,#c9d0d5);color:#b8c0c6}.black{background:radial-gradient(circle at 34% 26%,#62506f 0 8%,#35283f 34%,#17131d 76%,#0f0c13 100%);color:#17131d;box-shadow:inset -8px -10px 14px #0005,inset 9px 9px 14px #ffffff28,0 5px 8px #382d493d}.black:before{content:'🩹';position:absolute;right:7%;top:10%;font-size:.58em;transform:rotate(18deg);filter:drop-shadow(0 1px 1px #0005)}.blackmark{display:flex;flex-direction:column;align-items:center;line-height:.86}.blackmark .heart{font-size:1.05em}.blackmark em{font-style:normal;font-size:.64em;margin-top:5px;color:#ffd8df;text-shadow:0 1px 2px #0009}.pink{background:#f38da5;color:#f38da5}.blue{background:#69aee8;color:#69aee8}.green{background:#70c995;color:#70c995}.purple{background:#a78adf;color:#a78adf}.orange{background:#f2a35e;color:#f2a35e}.balloon span{color:white;pointer-events:none}.silver span{color:#586c78;text-shadow:none}.gold span{color:#725511;text-shadow:none}.black span{color:#fff;text-shadow:0 2px 3px #0008}
 .pop{position:absolute;font-weight:1000;font-size:22px;z-index:30;pointer-events:none;animation:float .7s forwards}@keyframes float{to{transform:translateY(-40px);opacity:0}}
 .msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:25;background:#ffffffed;padding:8px 14px;border-radius:18px;font-weight:900;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap}.msg.show{opacity:1}
 .end{display:none;position:absolute;inset:0;z-index:50;background:#dff4ffee;align-items:center;justify-content:center}.end.show{display:flex}.small{font-size:13px;opacity:.75}
@@ -42,19 +42,20 @@ body{margin:0;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;back
     <div class="legend" id="legend">
       <b>🎈 說明</b>
       <div>彩球：依球面加分</div>
-      <div>🟡 🔫?：+2 或空包</div>
+      <div>🟡 🔫?：+3 或空包</div>
       <div>⚪ ⏱+3：加 3 秒</div>
-      <div class="small">特殊球不計分</div>
+      <div>🖤 💔：誤射 -5 分</div>
+      <div class="small">金銀球不計分</div>
     </div>
     <div class="msg" id="msg"></div>
-    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>V0.8 全場飛散版｜60 秒・20 發<br>氣球會主動分散到整個畫面</p><button class="btn" id="go">開始測試</button></div></div>
+    <div class="start" id="start"><div class="card"><h1>🎈 射氣球</h1><p>一般模式 V0.15｜60 秒・20 發<br>追分、搶資源，也要避開黑心氣球</p><button class="btn" id="go">開始測試</button></div></div>
     <div class="end" id="end"><div class="card"><h1>本局結束</h1><p>總分：<b id="final">0</b></p><p class="small" id="stats"></p><button class="btn" id="again">再玩一次</button></div></div>
   </div>
 </div>
 <script>
 (()=>{
 const g=document.getElementById('game'), legend=document.getElementById('legend'), scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),ammoEl=document.getElementById('ammo'),msg=document.getElementById('msg');
-let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,raf=0,lastTs=0,spawnSeq=0;
+let score=0,time=60,ammo=20,running=false,balls=[],timer,spawnTimer,shots=0,hits=0,blackHits=0,raf=0,lastTs=0,spawnSeq=0;
 const colors=['pink','blue','green','purple','orange'];
 const scoreWeights=[
   {v:1,w:25},{v:2,w:22},{v:3,w:18},{v:5,w:20},{v:10,w:15}
@@ -64,10 +65,11 @@ function hud(){scoreEl.textContent=score;timeEl.textContent=time;ammoEl.textCont
 function note(t){msg.textContent=t;msg.classList.add('show');clearTimeout(msg._t);msg._t=setTimeout(()=>msg.classList.remove('show'),900)}
 function bounds(){const W=g.clientWidth,H=g.clientHeight;const safe=Math.max(92,legend.offsetWidth+12);return {W,H,right:Math.max(125,W-safe-6),top:4,bottom:H-10}}
 function speedFor(type,val,sizeMul){
-  // V0.14:刺激靠多目標追逐與取捨，不靠把 +10 做成閃電。
+  // 一般模式：刺激靠多目標追逐與取捨，不靠把 +10 做成閃電。
   // +10 仍最難，但只比 +5 快一階；金銀與高分球接近，避免資源球變送分。
   let base,spread;
   if(type==='gold'||type==='silver'){base=242;spread=48}
+  else if(type==='black'){base=222;spread=44}
   else if(val===10){base=270;spread=54}
   else if(val===5){base=242;spread=48}
   else if(val===3){base=218;spread=44}
@@ -89,12 +91,13 @@ function spawn(force=false){
   const {H,right}=bounds();
   const b=document.createElement('div');b.className='balloon';
   let type='score',label,val=0;const r=Math.random();
-  const goldOn=balls.some(o=>!o.dead&&o.type==='gold'), silverOn=balls.some(o=>!o.dead&&o.type==='silver');
+  const goldOn=balls.some(o=>!o.dead&&o.type==='gold'), silverOn=balls.some(o=>!o.dead&&o.type==='silver'), blackOn=balls.some(o=>!o.dead&&o.type==='black');
   const scoreCount=balls.filter(o=>!o.dead&&o.type==='score').length;
   if(scoreCount>=8 && r<.04 && !goldOn){type='gold';b.classList.add('gold');label='🔫 ?'}
-  else if(scoreCount>=8 && r<.08 && !silverOn){type='silver';b.classList.add('silver');label='⏱ +3'}
+  else if(scoreCount>=8 && r>=.04 && r<.08 && !silverOn){type='silver';b.classList.add('silver');label='⏱ +3'}
+  else if(scoreCount>=8 && r>=.08 && r<.11 && !blackOn){type='black';b.classList.add('black');label='<span class="blackmark"><span class="heart">💔</span><em>-5</em></span>'}
   else{val=pickScore();b.classList.add(colors[Math.floor(Math.random()*colors.length)]);label='+'+val}
-  b.innerHTML='<span>'+label+'</span>';
+  b.innerHTML=type==='black'?label:'<span>'+label+'</span>';
   const sizeMul=pickSize();
   b.style.width=(76*sizeMul)+'px';b.style.height=(72*sizeMul)+'px';
   b.style.fontSize=(22*Math.max(.76,sizeMul))+'px';
@@ -191,8 +194,9 @@ function motion(ts){
 function shoot(o,cx,cy){
   if(!running||o.dead||ammo<=0)return;shots++;ammo--;hits++;let text='';
   if(o.type==='score'){score+=o.val;text='+'+o.val}
-  else if(o.type==='gold'){if(Math.random()<.55){ammo+=2;text='🔫 +2';note('補到 2 發子彈！')}else{text='💨 空包';note('空包！')}}
-  else{time+=3;text='⏱ +3';note('時間 +3 秒！')}
+  else if(o.type==='gold'){if(Math.random()<.55){ammo+=3;text='🔫 +3';note('補到 3 發子彈！')}else{text='💨 空包';note('空包！')}}
+  else if(o.type==='silver'){time+=3;text='⏱ +3';note('時間 +3 秒！')}
+  else if(o.type==='black'){score-=5;blackHits++;text='💔 -5';note('誤射黑心氣球，-5 分！')}
   const rect=g.getBoundingClientRect(),p=document.createElement('div');p.className='pop';p.textContent=text;p.style.left=(cx-rect.left-20)+'px';p.style.top=(cy-rect.top-20)+'px';g.appendChild(p);setTimeout(()=>p.remove(),750);remove(o);hud();if(ammo<=0)note('子彈用完，等時間結束')
 }
 function missShot(cx,cy){
@@ -209,7 +213,7 @@ g.addEventListener('pointerdown',e=>{
 });
 
 function begin(){
-  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=0;spawnSeq=Math.floor(Math.random()*4);running=true;lastTs=0;hud();
+  balls.forEach(remove);score=0;time=60;ammo=20;shots=hits=blackHits=0;spawnSeq=Math.floor(Math.random()*4);running=true;lastTs=0;hud();
   document.getElementById('start').style.display='none';document.getElementById('end').classList.remove('show');
   for(let i=0;i<9;i++)setTimeout(()=>spawn(true),i*150);
   clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);raf=requestAnimationFrame(motion);
@@ -218,7 +222,7 @@ function begin(){
 }
 function finish(){
   if(!running)return;running=false;clearInterval(timer);clearInterval(spawnTimer);cancelAnimationFrame(raf);balls.forEach(remove);
-  document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0;document.getElementById('stats').textContent=`射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜剩餘 ${ammo} 發`;document.getElementById('end').classList.add('show')
+  document.getElementById('final').textContent=score;const misses=Math.max(0,shots-hits),rate=shots?Math.round(hits/shots*100):0;document.getElementById('stats').textContent=`射擊 ${shots} 發｜命中 ${hits}｜MISS ${misses}｜命中率 ${rate}%｜黑心誤射 ${blackHits}｜剩餘 ${ammo} 發`;document.getElementById('end').classList.add('show')
 }
 // Mobile game: suppress browser zoom/gesture handling without changing gameplay.
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
