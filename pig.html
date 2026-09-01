@@ -143,6 +143,76 @@ filter:saturate(1.04) drop-shadow(0 3px 3px rgba(69,32,20,.16));position:relativ
 </style>
 </head>
 <body>
+
+<style id="gameCenterGateStyle">
+#gameCenterGate{
+  position:fixed;inset:0;z-index:2147483647;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;background:linear-gradient(155deg,#dcefff 0%,#fff0f7 100%);
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+}
+#gameCenterGate .gc-card{
+  width:min(420px,92vw);padding:30px 24px;border-radius:28px;
+  background:rgba(255,255,255,.95);box-shadow:0 18px 50px rgba(75,94,125,.16);
+  text-align:center;color:#667386;
+}
+#gameCenterGate .gc-icon{font-size:48px;margin-bottom:10px}
+#gameCenterGate .gc-title{font-size:23px;font-weight:900;margin-bottom:8px}
+#gameCenterGate .gc-msg{font-size:14px;line-height:1.7;color:#8a94a3}
+</style>
+<div id="gameCenterGate" aria-live="polite">
+  <div class="gc-card">
+    <div class="gc-icon">☁️</div>
+    <div class="gc-title">正在確認活動狀態</div>
+    <div class="gc-msg">請稍候…</div>
+  </div>
+</div>
+<script>
+(function(){
+  const GATE_URL='https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app/gameCenter/control/open.json';
+  const TIMEOUT_MS=8000;
+
+  function setGate(title,msg,icon){
+    const gate=document.getElementById('gameCenterGate');
+    if(!gate)return;
+    gate.querySelector('.gc-title').textContent=title;
+    gate.querySelector('.gc-msg').textContent=msg;
+    gate.querySelector('.gc-icon').textContent=icon||'☁️';
+  }
+  function allow(){
+    const gate=document.getElementById('gameCenterGate');
+    if(gate)gate.remove();
+    const style=document.getElementById('gameCenterGateStyle');
+    if(style)style.remove();
+  }
+  function deny(){
+    setGate('活動尚未開放','目前無法進入小豬打打樂，請從遊戲活動中心稍後再試。','🔒');
+  }
+  function failClosed(){
+    setGate('暫時無法確認活動狀態','為避免繞過活動入口，目前先暫停進入遊戲。請稍後再試。','☁️');
+  }
+
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
+
+  fetch(GATE_URL,{method:'GET',cache:'no-store',signal:controller.signal})
+    .then(r=>{
+      if(!r.ok)throw new Error('HTTP_'+r.status);
+      return r.json();
+    })
+    .then(v=>{
+      clearTimeout(timer);
+      if(v===true)allow();
+      else deny();
+    })
+    .catch(err=>{
+      clearTimeout(timer);
+      console.error('GAME_CENTER_GATE',err);
+      failClosed();
+    });
+})();
+</script>
+
 <div class="wrap">
   <header class="hero">
     <h1>🐷 小豬打打樂 🌱⭐</h1>
