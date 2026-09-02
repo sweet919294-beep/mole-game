@@ -251,7 +251,7 @@ textarea{min-height:72px;resize:vertical}
         <div class="card">
           <h2>⚙ 遊戲設定（主控面板）</h2>
           <div style="display:flex;justify-content:flex-end;margin:0 0 12px"><button id="adminMusicToggle" class="btn white" type="button" onclick="toggleMusic()" aria-pressed="true">🎵 Music：開</button></div>
-          <div class="field" style="padding:14px;border:2px solid #ffd0df;border-radius:18px;background:#fff6f9;margin-bottom:18px">
+          <div id="adminEnvCard" class="field" style="padding:14px;border:2px solid #ffd0df;border-radius:18px;background:#fff6f9;margin-bottom:18px">
             <label style="font-weight:800;color:#e96f96">活動環境</label>
             <select id="activityEnv" style="width:100%;margin-top:8px;padding:13px 14px;border:1px solid #eadde2;border-radius:14px;background:white;font-size:16px">
               <option value="room1" selected>小寶</option>
@@ -412,8 +412,16 @@ function parseLocalDateTime(value){
   return Number.isFinite(t)?t:null;
 }
 
-function setActivityEnv(env){
+function setActivityEnv(env,force=false){
   const nextEnv=(env==="room2")?"room2":"room1";
+  /* 甯唲共用管理員只能管理 room2；玩家進房時可用 force=true 依玩家選擇切換。 */
+  if(window.adminRole==="shared" && nextEnv!=="room2" && !force){
+    const envSelect=document.getElementById("activityEnv");
+    if(envSelect) envSelect.value="room2";
+    const box=document.getElementById("envStatus");
+    if(box) box.textContent="目前選擇：甯唲。此管理員僅可管理甯唲。";
+    return false;
+  }
   if(realtimeBound){
     gameRef.off("value",handleGameValue);
     claimsRef.off("value",handleClaimsValue);
@@ -427,6 +435,30 @@ function setActivityEnv(env){
   usersRef=db.ref(base+"/users");
   recordsRef=db.ref(base+"/records");
   bindRealtimeListeners();
+  return true;
+}
+
+function configureAdminRoomAccess(role){
+  const envSelect=document.getElementById("activityEnv");
+  const box=document.getElementById("envStatus");
+  const envCard=document.getElementById("adminEnvCard");
+  if(!envSelect) return;
+  if(role==="shared"){
+    // 甯唲管理員固定進 room2；整個活動環境切換框不顯示。
+    envSelect.innerHTML='<option value="room2">甯唲</option>';
+    envSelect.value="room2";
+    if(envCard) envCard.classList.add("hidden");
+    if(box) box.textContent="目前選擇：甯唲。此管理員僅可管理甯唲。";
+    setActivityEnv("room2");
+  }else{
+    if(envCard) envCard.classList.remove("hidden");
+    envSelect.innerHTML='<option value="room1">小寶</option><option value="room2">甯唲</option>';
+    const ownerEnv=(activeEnv==="room2")?"room2":"room1";
+    envSelect.value=ownerEnv;
+    if(box) box.textContent=ownerEnv==="room2"
+      ?"目前選擇：甯唲。與小寶 完全獨立。"
+      :"目前選擇：小寶。與甯唲 完全獨立。";
+  }
 }
 
 const S={
@@ -476,6 +508,13 @@ async function ensureAdminConfig(){
 
 document.addEventListener("change",e=>{
   if(e.target && e.target.id==="activityEnv"){
+    if(window.adminRole==="shared" && e.target.value!=="room2"){
+      e.target.value="room2";
+      setActivityEnv("room2");
+      const box=document.getElementById("envStatus");
+      if(box) box.textContent="目前選擇：甯唲。此管理員僅可管理甯唲。";
+      return;
+    }
     setActivityEnv(e.target.value);
     const hint=e.target.value==="room2"
       ?"目前選擇：甯唲。與小寶 完全獨立。"
@@ -489,6 +528,7 @@ document.querySelectorAll(".navbtn").forEach(btn=>{
     document.querySelectorAll(".navbtn").forEach(x=>x.classList.remove("active"));
     document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
     btn.classList.add("active"); q(btn.dataset.page).classList.add("active");
+   if(btn.dataset.page==="adminPage" && window.adminRole==="shared") configureAdminRoomAccess("shared");
    const passwordCard=q("changeAdminPasswordCard");
    if(passwordCard){
      const onAdminPage=btn.dataset.page==="adminPage";
@@ -509,6 +549,7 @@ async function ownerLogin(){
     window.adminRole=isOwner?"owner":"shared";
     q("adminLogin").classList.add("hidden");
     q("adminPanel").classList.remove("hidden");
+    configureAdminRoomAccess(window.adminRole);
     startBackgroundMusic();
     const passwordCard=q("changeAdminPasswordCard");
     if(passwordCard) passwordCard.classList.toggle("hidden",!isOwner);
@@ -638,7 +679,7 @@ function backToPlayerEntry(){
 
 async function enterRoom(){
   const selectedRoom=q("playerRoomSelect")?.value||"room1";
-  setActivityEnv(selectedRoom);
+  setActivityEnv(selectedRoom,true);
   try{
     const roomSnap=await gameRef.once("value");
     if(!roomSnap.exists()){
