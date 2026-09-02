@@ -193,16 +193,18 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
   <div class="footer">更多活動陸續加入中</div>
 </div>
 
+<audio id="lobbyBgm" preload="auto" loop src="./tunetank-music-box-sleep-lullaby-349471.mp3"></audio>
 <script id="lobbyFloatingNotesScript">
 (() => {
   const field=document.getElementById('lobbyNoteField');
   const center=document.getElementById('activityCenter');
-  if(!field||!center) return;
+  const music=document.getElementById('lobbyBgm');
+  if(!field||!center||!music) return;
   const glyphs=['♪','♫','♩','♬'];
   const colors=['#ef8fbd','#9c8ce8','#77aee8','#e9a85f','#c58de2'];
   let timer=null;
   function makeNote(){
-    if(center.style.display==='none') return;
+    if(center.style.display==='none'||music.paused) return;
     const note=document.createElement('span');
     note.className='lobby-float-note';
     note.textContent=glyphs[Math.floor(Math.random()*glyphs.length)];
@@ -220,14 +222,23 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
   }
   function schedule(){
     clearTimeout(timer);
+    if(music.paused) return;
     timer=setTimeout(()=>{
       makeNote();
       if(Math.random()>.45) setTimeout(makeNote,260);
       schedule();
     },900+Math.random()*800);
   }
-  for(let i=0;i<3;i++) setTimeout(makeNote,350+i*420);
-  schedule();
+  function startNotes(){
+    for(let i=0;i<3;i++) setTimeout(makeNote,350+i*420);
+    schedule();
+  }
+  function stopNotes(){clearTimeout(timer);timer=null;}
+  music.addEventListener('play',startNotes);
+  music.addEventListener('pause',stopNotes);
+  if(sessionStorage.getItem('gameCenterLobbyMusic')==='1'){
+    music.play().catch(()=>{});
+  }
 })();
 </script>
 <div id="balloonZoneShell"><div id="balloonZoneMount"></div></div>
