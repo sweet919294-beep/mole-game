@@ -89,6 +89,9 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
 @keyframes lobbyNoteDrift{0%{opacity:0;transform:translate3d(0,10px,0) rotate(var(--rot0)) scale(.78)}18%{opacity:.78}72%{opacity:.64}100%{opacity:0;transform:translate3d(var(--dx),var(--dy),0) rotate(var(--rot1)) scale(1.08)}}
 @media(max-width:560px){#activityCenter{padding-top:76px!important}#lobbyNoteBand{top:4px;height:68px}}
 @media(prefers-reduced-motion:reduce){.lobby-float-note{animation:none!important;opacity:.45}}
+#lobbyMusicButton{position:absolute;z-index:9;top:12px;right:18px;width:44px;height:44px;border:0;background:transparent;color:#8a96aa;font-size:24px;line-height:44px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#lobbyMusicButton:focus-visible{outline:2px solid #aebbd0;outline-offset:2px;border-radius:50%}
+@media(max-width:560px){#lobbyMusicButton{top:10px;right:12px}}
 </style>
 <style id="gameCenterGateStyle">
 #gameCenterGate{
@@ -162,6 +165,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
 <div class="wrap" id="activityCenter">
 
   <div id="lobbyNoteBand" aria-hidden="true"><div id="lobbyNoteField"></div></div>
+  <button id="lobbyMusicButton" type="button" aria-label="播放活動中心音樂">♫</button>
   <header class="hero">
     <h1>遊戲活動中心</h1>
     <p>選一個活動，開始玩吧 ✦</p>
@@ -199,12 +203,13 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
   const field=document.getElementById('lobbyNoteField');
   const center=document.getElementById('activityCenter');
   const music=document.getElementById('lobbyBgm');
-  if(!field||!center||!music) return;
+  const musicButton=document.getElementById('lobbyMusicButton');
+  if(!field||!center||!music||!musicButton) return;
   const glyphs=['♪','♫','♩','♬'];
   const colors=['#ef8fbd','#9c8ce8','#77aee8','#e9a85f','#c58de2'];
   let timer=null;
   function makeNote(){
-    if(center.style.display==='none'||music.paused) return;
+    if(center.style.display==='none') return;
     const note=document.createElement('span');
     note.className='lobby-float-note';
     note.textContent=glyphs[Math.floor(Math.random()*glyphs.length)];
@@ -222,20 +227,30 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
   }
   function schedule(){
     clearTimeout(timer);
-    if(music.paused) return;
     timer=setTimeout(()=>{
       makeNote();
       if(Math.random()>.45) setTimeout(makeNote,260);
       schedule();
     },900+Math.random()*800);
   }
-  function startNotes(){
-    for(let i=0;i<3;i++) setTimeout(makeNote,350+i*420);
-    schedule();
+  for(let i=0;i<3;i++) setTimeout(makeNote,350+i*420);
+  schedule();
+
+  function syncButton(){
+    musicButton.textContent=music.paused?'♫':'❚❚';
+    musicButton.setAttribute('aria-label',music.paused?'播放活動中心音樂':'暫停活動中心音樂');
   }
-  function stopNotes(){clearTimeout(timer);timer=null;}
-  music.addEventListener('play',startNotes);
-  music.addEventListener('pause',stopNotes);
+  musicButton.addEventListener('click',()=>{
+    if(music.paused){
+      music.play().catch(()=>{});
+    }else{
+      music.pause();
+    }
+  });
+  music.addEventListener('play',syncButton);
+  music.addEventListener('pause',syncButton);
+  syncButton();
+
   if(sessionStorage.getItem('gameCenterLobbyMusic')==='1'){
     music.play().catch(()=>{});
   }
