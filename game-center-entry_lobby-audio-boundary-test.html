@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>遊戲活動中心｜Audio Boundary Diagnostic</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f6f7f9;color:#222;overflow:hidden}
+    #entryView{width:100%;height:100%;display:grid;place-items:center;padding:24px}
+    .card{width:min(92vw,480px);background:#fff;border-radius:18px;padding:28px 22px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.08)}
+    h1{margin:0 0 12px;font-size:24px}
+    p{margin:0 0 20px;line-height:1.65;color:#555}
+    button{width:100%;border:0;border-radius:14px;padding:16px 18px;background:#111;color:#fff;font-size:18px;font-weight:700;touch-action:manipulation}
+    #status{margin-top:16px;font-size:14px;color:#666}
+    #lobbyFrame{display:none;width:100%;height:100%;border:0;background:#fff}
+  </style>
+</head>
+<body>
+  <section id="entryView">
+    <div class="card">
+      <h1>ENTRY → LOBBY 音樂邊界診斷</h1>
+      <p>只測試：入口 BGM 在同一次點擊啟動；進入正式 LOBBY 後，點「射氣球」時由宿主頁立即停止入口 BGM。</p>
+      <button id="enterBtn" type="button">進入遊戲活動中心</button>
+      <div id="status">尚未測試</div>
+    </div>
+  </section>
+
+  <iframe id="lobbyFrame" title="遊戲活動中心 LOBBY"
+          src="about:blank" allow="autoplay; fullscreen"></iframe>
+
+  <audio id="hostBgm" loop preload="auto"
+         src="./tunetank-music-box-sleep-lullaby-349471.mp3"></audio>
+
+  <script>
+    const entryView = document.getElementById('entryView');
+    const enterBtn = document.getElementById('enterBtn');
+    const status = document.getElementById('status');
+    const lobbyFrame = document.getElementById('lobbyFrame');
+    const hostBgm = document.getElementById('hostBgm');
+
+    function stopHostBgm(){
+      hostBgm.pause();
+      hostBgm.currentTime = 0;
+    }
+
+    function bindLobbyBoundary(){
+      try{
+        const doc = lobbyFrame.contentDocument;
+        if(!doc) return;
+        const balloonEntry = doc.getElementById('balloonEntry');
+        if(!balloonEntry) return;
+        balloonEntry.addEventListener('click', stopHostBgm, {capture:true});
+      }catch(e){
+        status.textContent = 'LOBBY 邊界綁定失敗';
+      }
+    }
+
+    lobbyFrame.addEventListener('load', bindLobbyBoundary);
+
+    enterBtn.addEventListener('click', () => {
+      hostBgm.volume = 0.42;
+      const p = hostBgm.play();
+
+      if(p && typeof p.then === 'function'){
+        p.then(() => { status.textContent = '入口 BGM：成功'; })
+         .catch((err) => {
+           status.textContent = '入口 BGM：失敗｜' + (err && err.name ? err.name : 'unknown');
+         });
+      }
+
+      lobbyFrame.src = './game-center-lobby.html';
+      entryView.style.display = 'none';
+      lobbyFrame.style.display = 'block';
+    }, {once:true});
+  </script>
+</body>
+</html>
