@@ -251,7 +251,7 @@ textarea{min-height:72px;resize:vertical}
         <div class="card">
           <h2>⚙ 遊戲設定（主控面板）</h2>
           <div style="display:flex;justify-content:flex-end;margin:0 0 12px"><button id="adminMusicToggle" class="btn white" type="button" onclick="toggleMusic()" aria-pressed="true">🎵 Music：開</button></div>
-          <div class="field" style="padding:14px;border:2px solid #ffd0df;border-radius:18px;background:#fff6f9;margin-bottom:18px">
+          <div id="adminEnvCard" class="field" style="padding:14px;border:2px solid #ffd0df;border-radius:18px;background:#fff6f9;margin-bottom:18px">
             <label style="font-weight:800;color:#e96f96">活動環境</label>
             <select id="activityEnv" style="width:100%;margin-top:8px;padding:13px 14px;border:1px solid #eadde2;border-radius:14px;background:white;font-size:16px">
               <option value="room1" selected>小寶</option>
@@ -441,13 +441,17 @@ function setActivityEnv(env,force=false){
 function configureAdminRoomAccess(role){
   const envSelect=document.getElementById("activityEnv");
   const box=document.getElementById("envStatus");
+  const envCard=document.getElementById("adminEnvCard");
   if(!envSelect) return;
   if(role==="shared"){
+    // 甯唲管理員固定進 room2；整個活動環境切換框不顯示。
     envSelect.innerHTML='<option value="room2">甯唲</option>';
     envSelect.value="room2";
+    if(envCard) envCard.classList.add("hidden");
     if(box) box.textContent="目前選擇：甯唲。此管理員僅可管理甯唲。";
     setActivityEnv("room2");
   }else{
+    if(envCard) envCard.classList.remove("hidden");
     envSelect.innerHTML='<option value="room1">小寶</option><option value="room2">甯唲</option>';
     const ownerEnv=(activeEnv==="room2")?"room2":"room1";
     envSelect.value=ownerEnv;
