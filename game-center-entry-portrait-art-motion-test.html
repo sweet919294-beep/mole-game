@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>遊戲活動中心｜Audio Lifecycle Diagnostic</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f6f7f9;color:#222;overflow:hidden}
+    #entryView{position:fixed;inset:0;overflow:hidden;background:#f9eef5}
+    .entry-art-wrap{position:absolute;inset:0;overflow:hidden}
+    .entry-art{
+      position:absolute;inset:-1.5%;width:103%;height:103%;object-fit:cover;
+      animation:entryDrift 8s ease-in-out infinite alternate;
+      transform-origin:center center;
+      will-change:transform
+    }
+    /* 同一張定版圖的局部像素層：只讓原圖內既有小裝飾有輕微漂移，不新增圖案。 */
+    .art-detail{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .art-detail::before,.art-detail::after{
+      content:"";position:absolute;inset:-1.5%;
+      width:103%;height:103%;
+      background:url("./game-center-entry-portrait-final.png") center/cover no-repeat;
+      will-change:transform
+    }
+    .art-detail::before{
+      clip-path:polygon(0 0,38% 0,38% 34%,0 34%);
+      animation:detailFloatA 4.8s ease-in-out infinite alternate
+    }
+    .art-detail::after{
+      clip-path:polygon(72% 0,100% 0,100% 43%,72% 43%);
+      animation:detailFloatB 5.6s ease-in-out infinite alternate
+    }
+    .entry-glow{
+      position:absolute;inset:-15%;pointer-events:none;
+      background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.22),transparent 36%);
+      animation:glowBreath 3.6s ease-in-out infinite alternate
+    }
+    #enterBtn{
+      position:absolute;left:19%;top:57.2%;width:62%;height:8.8%;
+      border:0;background:transparent;color:transparent;
+      padding:0;margin:0;cursor:pointer;touch-action:manipulation;
+      -webkit-tap-highlight-color:transparent
+    }
+    #status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+    @keyframes entryDrift{
+      from{transform:translate3d(-.35%,-.2%,0) scale(1.008)}
+      to{transform:translate3d(.35%,.28%,0) scale(1.016)}
+    }
+    @keyframes detailFloatA{
+      from{transform:translate3d(-2px,1px,0) rotate(-.25deg)}
+      to{transform:translate3d(3px,-4px,0) rotate(.35deg)}
+    }
+    @keyframes detailFloatB{
+      from{transform:translate3d(2px,-2px,0)}
+      to{transform:translate3d(-3px,4px,0)}
+    }
+    @keyframes glowBreath{from{opacity:.30}to{opacity:.72}}
+    @media (prefers-reduced-motion:reduce){
+      .entry-art,.art-detail::before,.art-detail::after,.entry-glow{animation:none}
+    }
+    #lobbyFrame{display:none;width:100%;height:100%;border:0;background:#fff}
+    #loadingView{
+      display:none;position:fixed;inset:0;z-index:20;
+      align-items:center;justify-content:center;
+      background:#f6f7f9;color:#555;font-size:16px;font-weight:600
+    }
+  </style>
+</head>
+<body>
+  <section id="entryView" aria-label="遊戲活動中心主入口">
+    <div class="entry-art-wrap" aria-hidden="true">
+      <img class="entry-art" src="./game-center-entry-portrait-final.png" alt="">
+      <div class="art-detail"></div>
+      <div class="entry-glow"></div>
+    </div>
+    <button id="enterBtn" type="button" aria-label="點擊進入遊戲活動中心">點擊進入</button>
+    <div id="status" aria-live="polite">尚未測試</div>
+  </section>
+
+  <iframe id="lobbyFrame" title="遊戲活動中心 LOBBY"
+          src="about:blank" allow="autoplay; fullscreen"></iframe>
+
+  <div id="loadingView">活動中心載入中…</div>
+
+  <audio id="hostBgm" loop preload="auto"
+         src="./tunetank-music-box-sleep-lullaby-349471.mp3"></audio>
+
+  <script>
+    const entryView = document.getElementById('entryView');
+    const enterBtn = document.getElementById('enterBtn');
+    const status = document.getElementById('status');
+    const lobbyFrame = document.getElementById('lobbyFrame');
+    const loadingView = document.getElementById('loadingView');
+    const hostBgm = document.getElementById('hostBgm');
+
+    function playHostBgm(){
+      hostBgm.volume = 0.42;
+      const p = hostBgm.play();
+      if(p && typeof p.catch === 'function') p.catch(()=>{});
+    }
+
+    function stopHostBgm(){
+      hostBgm.pause();
+      hostBgm.currentTime = 0;
+    }
+
+    function isLobbyDocument(doc){
+      try{
+        return !!doc &&
+          !!doc.getElementById('activityCenter') &&
+          !!doc.getElementById('balloonEntry');
+      }catch(_){
+        return false;
+      }
+    }
+
+    function bindLobby(){
+      const doc = lobbyFrame.contentDocument;
+      if(!isLobbyDocument(doc)) return false;
+
+      const innerBgm = doc.getElementById('lobbyBgm');
+      const musicBtn = doc.getElementById('lobbyMusicButton');
+      const balloonEntry = doc.getElementById('balloonEntry');
+      const balloonBgm = doc.getElementById('balloonBgm');
+      const gameLinks = [...doc.querySelectorAll('a.card.active')];
+
+      // 本輪唯一新增：只補償射氣球 BGM 聽感音量。
+      // 正式 LOBBY 的 startMusicOnce 會先寫入 0.42，因此在實際 play 時再校正為 0.75。
+      if(balloonBgm){
+        balloonBgm.addEventListener('play', () => {
+          balloonBgm.volume = 0.82;
+        });
+      }
+
+      // 只允許 hostBgm 作為活動中心入口/LOBBY 音源，避免疊音。
+      if(innerBgm){
+        innerBgm.pause();
+        innerBgm.currentTime = 0;
+        innerBgm.addEventListener('play', () => {
+          innerBgm.pause();
+          innerBgm.currentTime = 0;
+        });
+      }
+
+      if(musicBtn){
+        musicBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if(hostBgm.paused) playHostBgm();
+          else hostBgm.pause();
+        }, true);
+      }
+
+      // 關鍵修正診斷：
+      // 正式 LOBBY 的 balloonEntry 有 pointerdown => startMusicOnce。
+      // 在 capture 階段阻擋 pointerdown，避免「滑動」被誤判為進入射氣球。
+      // 真正 click 仍放行，正式既有 click handler 會在 click 時才啟動氣球 BGM。
+      if(balloonEntry){
+        balloonEntry.addEventListener('pointerdown', (event) => {
+          event.stopImmediatePropagation();
+        }, true);
+      }
+
+      // 射氣球維持正式 LOBBY 原本的同 document 流程；
+      // 其他一般遊戲離開 iframe，改由頂層頁面正常開啟。
+      gameLinks.forEach(link => {
+        if(link === balloonEntry){
+          link.addEventListener('click', stopHostBgm, {capture:true});
+          return;
+        }
+
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          stopHostBgm();
+          window.top.location.href = link.href;
+        }, {capture:true});
+      });
+
+      return true;
+    }
+
+    function showLobbyWhenBound(){
+      try{
+        const inLobby = bindLobby();
+        if(!inLobby) return false;
+
+        lobbyFrame.style.visibility = 'visible';
+        lobbyFrame.style.pointerEvents = 'auto';
+        loadingView.style.display = 'none';
+
+        // 從一般遊戲返回正式 LOBBY 時，恢復同一支已解鎖過的 hostBgm。
+        if(entryView.style.display === 'none'){
+          playHostBgm();
+          status.textContent = 'LOBBY：入口 BGM 已恢復';
+        }
+        return true;
+      }catch(e){
+        status.textContent = 'LOBBY 綁定失敗';
+        return false;
+      }
+    }
+
+    lobbyFrame.addEventListener('load', () => {
+      // 不讓玩家在 bindLobby 尚未完成前點到正式 LOBBY 卡片。
+      lobbyFrame.style.visibility = 'hidden';
+      lobbyFrame.style.pointerEvents = 'none';
+
+      if(showLobbyWhenBound()) return;
+
+      // 若 load 事件早於 LOBBY 關鍵節點可取得，只重試綁定，不修改任何遊戲邏輯。
+      let attempts = 0;
+      const timer = setInterval(() => {
+        attempts += 1;
+        if(showLobbyWhenBound() || attempts >= 20){
+          clearInterval(timer);
+          if(attempts >= 20 && lobbyFrame.style.visibility !== 'visible'){
+            status.textContent = 'LOBBY 綁定逾時';
+          }
+        }
+      }, 50);
+    });
+
+    enterBtn.addEventListener('click', () => {
+      hostBgm.volume = 0.42;
+      const p = hostBgm.play();
+
+      if(p && typeof p.then === 'function'){
+        p.then(() => {
+          status.textContent = '入口 BGM：成功';
+        }).catch((err) => {
+          status.textContent = '入口 BGM：失敗｜' + (err && err.name ? err.name : 'unknown');
+        });
+      }
+
+      loadingView.style.display = 'flex';
+      lobbyFrame.style.visibility = 'hidden';
+      lobbyFrame.style.pointerEvents = 'none';
+      lobbyFrame.src = './game-center-lobby.html';
+      entryView.style.display = 'none';
+      lobbyFrame.style.display = 'block';
+    }, {once:true});
+  </script>
+</body>
+</html>
