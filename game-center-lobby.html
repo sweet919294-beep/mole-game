@@ -1065,6 +1065,126 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
       menuPage.prepend(nicknameWrap);
     }
 
+    /* 幸運速報：只新增公開顯示，資料直接沿用主控既有中獎紀錄。 */
+    const luckyStyle=document.createElement('style');
+    luckyStyle.textContent=`
+      .lucky-card{
+        width:min(760px,92%);margin:0 auto 18px;padding:16px 17px 14px;
+        border-radius:22px;background:rgba(255,250,252,.94);
+        border:1px dashed #f0c9d7;box-shadow:0 8px 22px rgba(88,105,135,.08)
+      }
+      .lucky-head{display:flex;align-items:center;gap:8px;margin-bottom:13px}
+      .lucky-title{font-size:19px;font-weight:950;color:#d85f8b;white-space:nowrap}
+      .lucky-sub{font-size:12px;font-weight:800;color:#8994a4;min-width:0;flex:1}
+      .lucky-more{height:36px;padding:0 14px;border-radius:18px;border:1px solid #f1c4d4;background:#fff2f7;color:#d7608c;font-weight:900;font-size:13px;white-space:nowrap}
+      .lucky-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+      .lucky-preview-item{min-width:0;padding:3px 12px 4px;border-right:1px solid #f3dce5}
+      .lucky-preview-item:first-child{padding-left:2px}.lucky-preview-item:last-child{border-right:0;padding-right:2px}
+      .lucky-preview-name{font-size:14px;font-weight:950;color:#5c6574;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lucky-preview-prize{margin-top:3px;font-size:13px;font-weight:900;color:#dc668f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lucky-preview-time{margin-top:5px;font-size:12px;color:#8994a4}
+      .lucky-preview-empty{grid-column:1/-1;text-align:center;padding:12px 6px;color:#a0a8b4;font-size:13px}
+      .lucky-note{margin-top:10px;font-size:11px;color:#9aa3af}
+      .lucky-shade{position:absolute;inset:0;z-index:92;background:rgba(64,73,91,.20);opacity:0;pointer-events:none;transition:opacity .20s ease}
+      .lucky-shade.open{opacity:1;pointer-events:auto}
+      .lucky-drop{position:absolute;right:18px;top:72px;z-index:93;width:min(430px,90%);height:0;max-height:calc(100% - 92px);background:rgba(255,255,255,.99);border:1px solid rgba(255,255,255,.96);border-radius:24px;box-shadow:0 18px 44px rgba(55,66,88,.18);overflow:hidden;opacity:0;pointer-events:none;transition:height .22s ease,opacity .18s ease}
+      .lucky-drop.open{opacity:1;pointer-events:auto}.lucky-drop.dragging{transition:none}
+      .lucky-panel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 10px}
+      .lucky-panel-title{font-size:21px;font-weight:950;color:#d65d88}.lucky-close{width:44px;height:44px;border:0;background:transparent;font-size:25px;color:#7f8998}
+      .lucky-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 14px}
+      .lucky-tab{height:39px;border-radius:20px;background:#fff;font-weight:900;border:1px solid #e8ebf0;color:#8390a2}
+      .lucky-tab.active{background:#fff2f7;border-color:#efa9c0;color:#d65f89}
+      .lucky-body{padding:0 16px 38px;overflow:auto;max-height:min(540px,calc(100vh - 230px))}
+      .lucky-range{font-size:11px;color:#9aa3af;margin:0 0 9px 3px;line-height:1.45}
+      .lucky-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+      .lucky-table th{padding:9px 4px;border-bottom:1px solid #edf0f4;color:#9ba4b1;font-size:11px;text-align:left}
+      .lucky-table th:nth-child(1){width:26%}.lucky-table th:nth-child(2){width:38%}.lucky-table th:nth-child(3){width:36%}
+      .lucky-table td{padding:11px 4px;border-bottom:1px solid #f1f3f6;color:#5e697b;vertical-align:top;word-break:break-word}
+      .lucky-table td:nth-child(2){color:#d9638c;font-weight:800}.lucky-table td:nth-child(3){font-size:11px;color:#8591a2}
+      .lucky-empty{text-align:center;color:#a0a8b4;font-size:13px;padding:34px 8px}
+      .lucky-tail{position:absolute;left:0;right:0;bottom:0;height:30px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.98))}
+      .lucky-tail span{display:block;width:48px;height:5px;border-radius:999px;background:#d8dee7}
+      @media(max-width:560px){
+        .lucky-card{width:calc(100% - 24px);margin-bottom:14px;padding:14px 13px 12px}.lucky-head{gap:6px}.lucky-title{font-size:17px}.lucky-sub{font-size:11px}.lucky-more{height:34px;padding:0 11px;font-size:12px}
+        .lucky-preview-item{padding-left:8px;padding-right:8px}.lucky-preview-name{font-size:13px}.lucky-preview-prize{font-size:12px}
+        .lucky-drop{right:12px;top:62px;width:calc(100% - 24px);max-height:calc(100% - 74px);border-radius:22px}
+      }
+    `;
+    sh.appendChild(luckyStyle);
+
+    const luckyWrap=document.createElement('section');
+    luckyWrap.className='lucky-card';
+    luckyWrap.setAttribute('aria-label','幸運速報');
+    luckyWrap.innerHTML=`
+      <div class="lucky-head"><div class="lucky-title">🎉 幸運速報</div><div class="lucky-sub">本期最新中獎資訊</div><button class="lucky-more" type="button">查看更多 ›</button></div>
+      <div class="lucky-preview"></div>
+      <div class="lucky-note">※ 顯示最近 10 筆中獎資訊</div>
+    `;
+    nicknameWrap.insertAdjacentElement('afterend',luckyWrap);
+
+    const luckyShade=document.createElement('div');
+    luckyShade.className='lucky-shade';
+    const luckyDrop=document.createElement('aside');
+    luckyDrop.className='lucky-drop';
+    luckyDrop.setAttribute('aria-label','幸運速報查看更多');
+    luckyDrop.innerHTML=`
+      <div class="lucky-panel-head"><div class="lucky-panel-title">🎉 幸運速報</div><button class="lucky-close" type="button" aria-label="關閉">×</button></div>
+      <div class="lucky-tabs"><button class="lucky-tab active" data-period="0" type="button">本期</button><button class="lucky-tab" data-period="1" type="button">上期</button><button class="lucky-tab" data-period="2" type="button">上上期</button></div>
+      <div class="lucky-body"><div class="lucky-range"></div><table class="lucky-table"><thead><tr><th>玩家暱稱</th><th>獎品名稱</th><th>中獎時間</th></tr></thead><tbody></tbody></table><div class="lucky-empty" style="display:none">目前尚無中獎紀錄</div></div>
+      <div class="lucky-tail" aria-label="拖曳幸運速報"><span></span></div>
+    `;
+    sh.append(luckyShade,luckyDrop);
+
+    const luckyPreview=luckyWrap.querySelector('.lucky-preview');
+    const luckyMore=luckyWrap.querySelector('.lucky-more');
+    const luckyBody=luckyDrop.querySelector('.lucky-table tbody');
+    const luckyEmpty=luckyDrop.querySelector('.lucky-empty');
+    const luckyRange=luckyDrop.querySelector('.lucky-range');
+    const luckyClose=luckyDrop.querySelector('.lucky-close');
+    const luckyTail=luckyDrop.querySelector('.lucky-tail');
+    let luckyPeriodIndex=0;
+    const luckyPeriods=()=>{
+      const c=readPrizeCfg('master'),st=readPrizeState('master'),hist=readPrizeHistory('master');
+      return [
+        {label:'本期',start:c?.start||'',end:c?.end||'',logs:Array.isArray(st.logs)?st.logs:[]},
+        ...hist.slice(0,2).map((x,i)=>({...x,label:i===0?'上期':'上上期'}))
+      ];
+    };
+    const luckyShortTime=v=>{const d=new Date(v);if(!Number.isFinite(d.getTime()))return '—';const z=n=>String(n).padStart(2,'0');return z(d.getHours())+':'+z(d.getMinutes())};
+    const luckyFullTime=v=>{const d=new Date(v);if(!Number.isFinite(d.getTime()))return String(v||'—');const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'/'+z(d.getMonth()+1)+'/'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())};
+    const luckyRangeText=p=>{if(!p.start&&!p.end)return '尚未設定活動時間';return (p.start?dt24(p.start):'—')+' ～ '+(p.end?dt24(p.end):'—')};
+    function renderLuckyPreview(){
+      const p=luckyPeriods()[0]||{logs:[]};
+      const logs=(Array.isArray(p.logs)?p.logs:[]).slice().sort((a,b)=>new Date(b.time||0)-new Date(a.time||0)).slice(0,10);
+      luckyPreview.innerHTML='';
+      if(!logs.length){const e=document.createElement('div');e.className='lucky-preview-empty';e.textContent='目前尚無中獎資訊';luckyPreview.appendChild(e);return}
+      logs.slice(0,3).forEach(x=>{const item=document.createElement('div');item.className='lucky-preview-item';const n=document.createElement('div');n.className='lucky-preview-name';n.textContent=x.name||'—';const pz=document.createElement('div');pz.className='lucky-preview-prize';pz.textContent=x.prize||'—';const tm=document.createElement('div');tm.className='lucky-preview-time';tm.textContent=luckyShortTime(x.time);item.append(n,pz,tm);luckyPreview.appendChild(item)});
+    }
+    function renderLuckyPanel(index=luckyPeriodIndex){
+      const periods=luckyPeriods();luckyPeriodIndex=Math.max(0,Math.min(index,2));const p=periods[luckyPeriodIndex]||{label:luckyPeriodIndex===0?'本期':luckyPeriodIndex===1?'上期':'上上期',logs:[]};
+      luckyDrop.querySelectorAll('.lucky-tab').forEach((b,i)=>b.classList.toggle('active',i===luckyPeriodIndex));
+      luckyRange.textContent=luckyRangeText(p);
+      const logs=(Array.isArray(p.logs)?p.logs:[]).slice().sort((a,b)=>new Date(b.time||0)-new Date(a.time||0)).slice(0,300);
+      luckyBody.innerHTML='';
+      logs.forEach(x=>{const tr=document.createElement('tr');[x.name||'—',x.prize||'—',luckyFullTime(x.time)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});luckyBody.appendChild(tr)});
+      luckyEmpty.style.display=logs.length?'none':'block';
+    }
+    renderLuckyPreview();renderLuckyPanel(0);
+    luckyDrop.querySelectorAll('.lucky-tab').forEach((b,i)=>b.addEventListener('click',()=>renderLuckyPanel(i)));
+
+    let luckyFullHeight=0,luckyDragging=false,luckyMoved=false,luckyStartY=0,luckyStartH=0,suppressLuckyClick=false;
+    const measureLucky=()=>{const prevH=luckyDrop.style.height,prevO=luckyDrop.style.opacity,had=luckyDrop.classList.contains('open');luckyDrop.classList.add('open');luckyDrop.style.height='auto';luckyDrop.style.opacity='0';const available=Math.max(240,holder.clientHeight-92);const measured=Math.min(luckyDrop.scrollHeight,available);luckyDrop.style.height=prevH;luckyDrop.style.opacity=prevO;if(!had)luckyDrop.classList.remove('open');luckyFullHeight=measured;return measured};
+    const setLuckyHeight=h=>{const full=luckyFullHeight||measureLucky();const val=Math.max(0,Math.min(full,h));const ratio=full?val/full:0;luckyDrop.style.height=val+'px';luckyDrop.style.opacity=String(Math.min(1,ratio*1.35));luckyShade.style.opacity=String(.20*ratio);if(val>1){luckyDrop.classList.add('open');luckyShade.classList.add('open')}else{luckyDrop.classList.remove('open');luckyShade.classList.remove('open')}return val};
+    const closeLucky=()=>{luckyDrop.classList.remove('dragging');luckyDrop.style.height='0px';luckyDrop.style.opacity='0';luckyShade.style.opacity='0';setTimeout(()=>{if((parseFloat(luckyDrop.style.height)||0)===0){luckyDrop.classList.remove('open');luckyShade.classList.remove('open')}},230)};
+    const openLucky=()=>{renderLuckyPreview();renderLuckyPanel(luckyPeriodIndex);const full=measureLucky();luckyShade.classList.add('open');luckyDrop.classList.add('open');requestAnimationFrame(()=>{luckyDrop.style.height=full+'px';luckyDrop.style.opacity='1';luckyShade.style.opacity='.20'})};
+    const beginLuckyDrag=(e,fromOpen)=>{luckyFullHeight=measureLucky();luckyDragging=true;luckyMoved=false;luckyStartY=e.clientY;luckyStartH=fromOpen?(parseFloat(luckyDrop.style.height)||luckyFullHeight):0;luckyDrop.classList.add('dragging');if(!fromOpen)setLuckyHeight(0);e.currentTarget.setPointerCapture?.(e.pointerId)};
+    const moveLuckyDrag=e=>{if(!luckyDragging)return;const dy=e.clientY-luckyStartY;if(Math.abs(dy)>4)luckyMoved=true;setLuckyHeight(luckyStartH+dy)};
+    const endLuckyDrag=()=>{if(!luckyDragging)return;luckyDragging=false;luckyDrop.classList.remove('dragging');const current=parseFloat(luckyDrop.style.height)||0,full=luckyFullHeight||measureLucky();if(luckyMoved){suppressLuckyClick=true;setTimeout(()=>{suppressLuckyClick=false},0)}if(current>full*.38)openLucky();else closeLucky()};
+    luckyMore.addEventListener('pointerdown',e=>beginLuckyDrag(e,false));luckyMore.addEventListener('pointermove',moveLuckyDrag);luckyMore.addEventListener('pointerup',endLuckyDrag);luckyMore.addEventListener('pointercancel',endLuckyDrag);
+    luckyMore.addEventListener('click',()=>{if(suppressLuckyClick)return;const h=parseFloat(luckyDrop.style.height)||0;h>2?closeLucky():openLucky()});
+    luckyTail.addEventListener('pointerdown',e=>beginLuckyDrag(e,true));luckyTail.addEventListener('pointermove',moveLuckyDrag);luckyTail.addEventListener('pointerup',endLuckyDrag);luckyTail.addEventListener('pointercancel',endLuckyDrag);
+    luckyClose.addEventListener('click',closeLucky);luckyShade.addEventListener('click',closeLucky);
+
     const nicknameInput=nicknameWrap.querySelector('#nicknameInput');
     const nicknameMsg=nicknameWrap.querySelector('#nicknameMsg');
     const nicknameKey='balloonPlayerNickname';
