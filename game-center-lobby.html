@@ -298,6 +298,116 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
   const deputyPasswordKey='balloonDeputyPasswordV1';
   const publicRoomKey='balloonPublicRoomV1';
   const defaultAdminPassword='2468';
+
+  // 射氣球活動共用資料層：Firebase RTDB 為跨 LINE / Chrome / 裝置的共同來源；
+  // 原 localStorage key 僅保留作同頁同步快取與既有 UI 相容層，不再作為活動唯一來源。
+  const BALLOON_SHARED_DB='https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app/balloonSharedV1';
+  const SHARED_ABORT=Symbol('shared-abort');
+  const sharedSegment=(base)=>({
+    [rankStorageKey]:'ranks',
+    [gameLogStorageKey]:'gameLogs',
+    balloonPrizeConfigV1:'prizeConfig',
+    balloonPrizeStateV1:'prizeState',
+    balloonPrizeHistoryV1:'prizeHistory'
+  })[base]||'';
+  const sharedPath=(base,room='master')=>{
+    const seg=sharedSegment(base); if(!seg) return '';
+    return seg+'/'+(room==='deputy'?'deputy':'master');
+  };
+  const sharedUrl=path=>BALLOON_SHARED_DB+'/'+path+'.json';
+  const localSharedKey=(base,room='master')=>base+(room==='deputy'?':ning':'');
+  function localSharedRead(base,room='master'){
+    try{const raw=localStorage.getItem(localSharedKey(base,room));return raw===null?null:JSON.parse(raw)}catch(_){return null}
+  }
+  function localSharedWrite(base,room,value){
+    try{localStorage.setItem(localSharedKey(base,room),JSON.stringify(value));return true}catch(_){return false}
+  }
+  function localSharedDelete(base,room){try{localStorage.removeItem(localSharedKey(base,room));return true}catch(_){return false}}
+  async function fbReadPath(path,etag=false){
+    const headers=etag?{'X-Firebase-ETag':'true'}:{};
+    const r=await fetch(sharedUrl(path),{method:'GET',headers,cache:'no-store'});
+    if(!r.ok) throw new Error('Firebase GET '+r.status);
+    return {value:await r.json(),etag:r.headers.get('ETag')};
+  }
+  async function fbWritePath(path,value){
+    const r=await fetch(sharedUrl(path),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});
+    if(!r.ok) throw new Error('Firebase PUT '+r.status);
+    return await r.json();
+  }
+  async function fbDeletePath(path){
+    const r=await fetch(sharedUrl(path),{method:'DELETE'});
+    if(!r.ok) throw new Error('Firebase DELETE '+r.status);
+    return true;
+  }
+  async function fbTxnPath(path,updater,retries=8){
+    for(let n=0;n<retries;n++){
+      const got=await fbReadPath(path,true);
+      const next=updater(got.value);
+      if(next===SHARED_ABORT)return {ok:true,aborted:true,value:got.value};
+      const r=await fetch(sharedUrl(path),{method:'PUT',headers:{'Content-Type':'application/json','If-Match':got.etag||'*'},body:JSON.stringify(next)});
+      if(r.status===412)continue;
+      if(!r.ok)throw new Error('Firebase TXN '+r.status);
+      return {ok:true,aborted:false,value:await r.json()};
+    }
+    throw new Error('Firebase TXN retry exceeded');
+  }
+  async function syncSharedKey(base,room='master'){
+    const path=sharedPath(base,room); if(!path)return null;
+    try{
+      const got=await fbReadPath(path,false);
+      if(got.value!==null){localSharedWrite(base,room,got.value);return got.value}
+      // 首次導入：只有本機真的已有資料時才嘗試建立遠端；空裝置不會把共同資料洗成空值。
+      const local=localSharedRead(base,room);
+      if(local!==null){
+        const seeded=await fbTxnPath(path,current=>current===null?local:SHARED_ABORT);
+        if(seeded.value!==null)localSharedWrite(base,room,seeded.value);
+        return seeded.value;
+      }
+      return null;
+    }catch(err){console.warn('Balloon shared sync failed',base,room,err);return localSharedRead(base,room)}
+  }
+  async function syncSharedRoom(room='master'){
+    await Promise.all([
+      syncSharedKey(rankStorageKey,room),
+      syncSharedKey(gameLogStorageKey,room),
+      syncSharedKey('balloonPrizeConfigV1',room),
+      syncSharedKey('balloonPrizeStateV1',room),
+      syncSharedKey('balloonPrizeHistoryV1',room)
+    ]);
+  }
+  async function syncSharedAll(){await Promise.all([syncSharedRoom('master'),syncSharedRoom('deputy')])}
+  function sharedWrite(base,room,value){
+    localSharedWrite(base,room,value);
+    const path=sharedPath(base,room); if(!path)return Promise.resolve(false);
+    return fbWritePath(path,value).then(v=>{localSharedWrite(base,room,v);return true}).catch(err=>{console.warn('Balloon shared write failed',base,room,err);return false});
+  }
+  function sharedDelete(base,room){
+    localSharedDelete(base,room);
+    const path=sharedPath(base,room); if(!path)return Promise.resolve(false);
+    return fbDeletePath(path).catch(err=>{console.warn('Balloon shared delete failed',base,room,err);return false});
+  }
+  function sharedTxn(base,room,updater){
+    const path=sharedPath(base,room); if(!path)return Promise.resolve({ok:false,value:null});
+    return fbTxnPath(path,updater).then(res=>{if(res.value===null)localSharedDelete(base,room);else localSharedWrite(base,room,res.value);return res}).catch(err=>{console.warn('Balloon shared transaction failed',base,room,err);return {ok:false,value:localSharedRead(base,room)}});
+  }
+  function normalizeRanks(raw){
+    const base={easy:[],normal:[],hard:[]};
+    if(raw&&typeof raw==='object')for(const mode of ['easy','normal','hard'])if(Array.isArray(raw[mode]))base[mode]=raw[mode];
+    return base;
+  }
+  function sharedUpsertRank(mode,name,score){
+    return sharedTxn(rankStorageKey,'master',raw=>{
+      const ranks=normalizeRanks(raw),rows=Array.isArray(ranks[mode])?ranks[mode]:[];
+      const idx=rows.findIndex(x=>x&&x.name===name);
+      if(idx>=0){if(Number(score)<=Number(rows[idx].score))return ranks;rows[idx]={name,score:Number(score),at:Date.now()}}
+      else rows.push({name,score:Number(score),at:Date.now()});
+      rows.sort((a,b)=>Number(b.score)-Number(a.score)||Number(a.at)-Number(b.at));ranks[mode]=rows.slice(0,10);return ranks;
+    });
+  }
+  function sharedAppendGameLog(log){
+    return sharedTxn(gameLogStorageKey,'master',raw=>[log,...(Array.isArray(raw)?raw:[])].slice(0,300));
+  }
+
   let adminRoomContext='master';
   let adminRole='master';
   const roomSuffix=room=>room==='deputy'?':ning':'';
@@ -345,6 +455,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
     ranks[mode].sort((a,b)=>b.score-a.score||a.at-b.at);
     ranks[mode]=ranks[mode].slice(0,10);
     try{ localStorage.setItem(scopedKey(rankStorageKey,room),JSON.stringify(ranks)); }catch(_){}
+    sharedUpsertRank(mode,playerName,score);
   }
 
   // 密碼保護：預設密碼只作為「尚未設定」時的登入備援，程式不會把它寫回覆蓋自訂密碼。
@@ -360,7 +471,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
     try{localStorage.setItem(adminPasswordKey,next);return localStorage.getItem(adminPasswordKey)===next;}catch(_){return false;}
   }
   function clearAllRanks(room=adminRoomContext){
-    try{localStorage.removeItem(scopedKey(rankStorageKey,room));return true;}catch(_){return false;}
+    try{localStorage.removeItem(scopedKey(rankStorageKey,room));sharedDelete(rankStorageKey,room);return true;}catch(_){return false;}
   }
 
   function loadGameLogs(room='master'){
@@ -375,12 +486,14 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
       const rows=loadGameLogs(room);
       rows.unshift(log);
       localStorage.setItem(scopedKey(gameLogStorageKey,room),JSON.stringify(rows.slice(0,300)));
+      sharedAppendGameLog(log);
       return true;
     }catch(_){return false}
   }
 
-  function mountMenu(push=true){
+  async function mountMenu(push=true){
     clearGame();
+    await syncSharedAll();
     shell.style.display = 'block';
     const holder = document.createElement('div');
     holder.style.cssText='width:100%;height:100%;overflow:auto';
@@ -800,9 +913,9 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
     function readPrizeCfg(room=adminRoomContext){try{return JSON.parse(localStorage.getItem(prizeKey(PRIZE_CFG_KEY,room))||'null')}catch(e){return null}}
     function readPrizeState(room=adminRoomContext){try{return JSON.parse(localStorage.getItem(prizeKey(PRIZE_STATE_KEY,room))||'null')||{awarded:0,items:{},winners:{},cold:0,logs:[]}}catch(e){return {awarded:0,items:{},winners:{},cold:0,logs:[]}}}
     function readPrizeHistory(room=adminRoomContext){try{const x=JSON.parse(localStorage.getItem(prizeKey(PRIZE_HISTORY_KEY,room))||'[]');return Array.isArray(x)?x:[]}catch(_){return []}}
-    function archivePrizePeriod(cfg,st,room=adminRoomContext){if(!cfg||!cfg.start||!cfg.end)return false;const logs=Array.isArray(st&&st.logs)?st.logs:[];const hist=readPrizeHistory(room);const id=String(cfg.start||'')+'|'+String(cfg.end||'');const period={id,start:cfg.start||'',end:cfg.end||'',logs:logs.slice(0,300),awarded:Math.max(0,Number(st&&st.awarded)||0)};const next=[period,...hist.filter(x=>x&&x.id!==id)].slice(0,2);localStorage.setItem(prizeKey(PRIZE_HISTORY_KEY,room),JSON.stringify(next));return true}
+    function archivePrizePeriod(cfg,st,room=adminRoomContext){if(!cfg||!cfg.start||!cfg.end)return false;const logs=Array.isArray(st&&st.logs)?st.logs:[];const hist=readPrizeHistory(room);const id=String(cfg.start||'')+'|'+String(cfg.end||'');const period={id,start:cfg.start||'',end:cfg.end||'',logs:logs.slice(0,300),awarded:Math.max(0,Number(st&&st.awarded)||0)};const next=[period,...hist.filter(x=>x&&x.id!==id)].slice(0,2);localStorage.setItem(prizeKey(PRIZE_HISTORY_KEY,room),JSON.stringify(next));sharedWrite(PRIZE_HISTORY_KEY,room,next);return true}
     function freshPrizeState(){return {awarded:0,items:{},winners:{},cold:0,coldPlayers:{},logs:[]}}
-    function resetPrizeState(room=adminRoomContext){localStorage.setItem(prizeKey(PRIZE_STATE_KEY,room),JSON.stringify(freshPrizeState()))}
+    function resetPrizeState(room=adminRoomContext){const next=freshPrizeState();localStorage.setItem(prizeKey(PRIZE_STATE_KEY,room),JSON.stringify(next));sharedWrite(PRIZE_STATE_KEY,room,next)}
     function resetPrizeStateWithArchive(oldCfg,oldState,room=adminRoomContext){archivePrizePeriod(oldCfg,oldState,room);resetPrizeState(room)}
     function loadPrizeAdmin(){const c=readPrizeCfg(),st=readPrizeState();if(c){prizeStartValue.value=dtLocal(c.start);prizeEndValue.value=dtLocal(c.end);syncPrizeDateDisplay(prizeStartValue,prizeStartDisplay);syncPrizeDateDisplay(prizeEndValue,prizeEndDisplay);sh.querySelector('.prize-quota').value=c.quota??'';sh.querySelector('.prize-per').value=c.perPlayer||1;sh.querySelector('.prize-items').value=(c.items||[]).map(x=>x.name+','+x.qty).join('\n')}else{prizeStartValue.value='';prizeEndValue.value='';prizeStartDisplay.value='';prizeEndDisplay.value='';sh.querySelector('.prize-quota').value='';sh.querySelector('.prize-per').value=1;sh.querySelector('.prize-items').value=''}renderPrizeStatus(c,st)}
     function renderPrizeStatus(c,st){if(!c){prizeStatus.textContent='尚未設定獎品活動';return}const total=(c.items||[]).reduce((a,x)=>a+(Number(x.qty)||0),0),left=Math.max(0,total-(st.awarded||0));prizeStatus.textContent='獎品總數 '+total+'｜已送出 '+(st.awarded||0)+'｜剩餘約 '+left+'｜發獎額度 '+(c.quota===''?'系統小確幸':c.quota)+'｜每人最多 '+(c.perPlayer||1)+' 份'}
@@ -868,7 +981,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
       if(quota!==''&&quota<already){roomPrizeMsg.textContent='本期已發出 '+already+' 份，發獎份數不能低於已發數量。';return}
       for(const x of items){const used=roomItemAwarded(st,x.name);if(x.qty<used){roomPrizeMsg.textContent='「'+x.name+'」本期已送出 '+used+' 份，設定數量不能低於已送出數量。';return}}
       const cfg={start,end,quota,perPlayer:per,items};
-      try{localStorage.setItem(prizeKey(PRIZE_CFG_KEY),JSON.stringify(cfg));loadRoomPrizeAdmin();renderAdminOverview();renderWinnerLogs(0);roomPrizeMsg.textContent='✓ 已儲存';roomPrizeMsg.classList.add('ok');setTimeout(()=>{if(roomPrizeMsg.textContent==='✓ 已儲存'){roomPrizeMsg.textContent='';roomPrizeMsg.classList.remove('ok')}},1800)}catch(e){roomPrizeMsg.textContent='儲存失敗，瀏覽器無法寫入儲存空間。'}
+      try{localStorage.setItem(prizeKey(PRIZE_CFG_KEY),JSON.stringify(cfg));sharedWrite(PRIZE_CFG_KEY,adminRoomContext,cfg);loadRoomPrizeAdmin();renderAdminOverview();renderWinnerLogs(0);roomPrizeMsg.textContent='✓ 已儲存';roomPrizeMsg.classList.add('ok');setTimeout(()=>{if(roomPrizeMsg.textContent==='✓ 已儲存'){roomPrizeMsg.textContent='';roomPrizeMsg.classList.remove('ok')}},1800)}catch(e){roomPrizeMsg.textContent='儲存失敗，瀏覽器無法寫入儲存空間。'}
     });
     adminRoom.querySelector('.room-new-period').addEventListener('click',()=>{
       const old=readPrizeCfg(),st=readPrizeState();
@@ -877,7 +990,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
       try{
         archivePrizePeriod(old,st);
         resetPrizeState();
-        localStorage.removeItem(prizeKey(PRIZE_CFG_KEY));
+        localStorage.removeItem(prizeKey(PRIZE_CFG_KEY));sharedDelete(PRIZE_CFG_KEY,adminRoomContext);
         loadRoomPrizeAdmin();renderAdminOverview();renderWinnerLogs(0);
         roomPrizeMsg.textContent='✓ 已封存本期，請設定新一期活動';roomPrizeMsg.classList.add('ok');
       }catch(e){roomPrizeMsg.textContent='開新一期失敗，瀏覽器無法寫入儲存空間。';roomPrizeMsg.classList.remove('ok')}
@@ -911,7 +1024,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
         del.addEventListener('click',()=>{
           if(!confirm('確定刪除「'+item.name+'」在'+roomRankModeLabel[roomRankMode]+'模式的排行榜成績嗎？'))return;
           const latest=loadRanks(adminRoomContext);latest[roomRankMode]=(latest[roomRankMode]||[]).filter(x=>x.name!==item.name);
-          try{localStorage.setItem(scopedKey(rankStorageKey,adminRoomContext),JSON.stringify(latest));roomRankMsg.textContent='已刪除 '+item.name+' 的'+roomRankModeLabel[roomRankMode]+'模式成績。';roomRankMsg.className='room-ranking-msg ok';renderRoomRanking(roomRankMode);refreshPublicRank()}catch(_){roomRankMsg.textContent='刪除失敗，瀏覽器無法寫入儲存空間。';roomRankMsg.className='room-ranking-msg'}
+          try{localStorage.setItem(scopedKey(rankStorageKey,adminRoomContext),JSON.stringify(latest));sharedWrite(rankStorageKey,adminRoomContext,latest);roomRankMsg.textContent='已刪除 '+item.name+' 的'+roomRankModeLabel[roomRankMode]+'模式成績。';roomRankMsg.className='room-ranking-msg ok';renderRoomRanking(roomRankMode);refreshPublicRank()}catch(_){roomRankMsg.textContent='刪除失敗，瀏覽器無法寫入儲存空間。';roomRankMsg.className='room-ranking-msg'}
         });act.appendChild(del);tr.append(pos,name,score,act);roomRankBody.appendChild(tr);
       });
       const empty=!rows.length;roomRankWrap.classList.toggle('empty',empty);roomRankEmpty.classList.toggle('show',empty);
@@ -921,7 +1034,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
     adminRoom.querySelector('.room-clear-mode').addEventListener('click',()=>{
       const ranks=loadRanks(adminRoomContext),count=(ranks[roomRankMode]||[]).length;if(!count){roomRankMsg.textContent='目前模式沒有排行榜資料。';roomRankMsg.className='room-ranking-msg';return}
       if(!confirm('確定清空'+roomRankModeLabel[roomRankMode]+'模式全部排行榜嗎？此操作無法復原。'))return;
-      ranks[roomRankMode]=[];try{localStorage.setItem(scopedKey(rankStorageKey,adminRoomContext),JSON.stringify(ranks));roomRankMsg.textContent=roomRankModeLabel[roomRankMode]+'模式排行榜已清空。';roomRankMsg.className='room-ranking-msg ok';renderRoomRanking(roomRankMode);refreshPublicRank()}catch(_){roomRankMsg.textContent='清空失敗，瀏覽器無法寫入儲存空間。';roomRankMsg.className='room-ranking-msg'}
+      ranks[roomRankMode]=[];try{localStorage.setItem(scopedKey(rankStorageKey,adminRoomContext),JSON.stringify(ranks));sharedWrite(rankStorageKey,adminRoomContext,ranks);roomRankMsg.textContent=roomRankModeLabel[roomRankMode]+'模式排行榜已清空。';roomRankMsg.className='room-ranking-msg ok';renderRoomRanking(roomRankMode);refreshPublicRank()}catch(_){roomRankMsg.textContent='清空失敗，瀏覽器無法寫入儲存空間。';roomRankMsg.className='room-ranking-msg'}
     });
     adminRoom.querySelector('.room-clear-all').addEventListener('click',()=>{
       if(!confirm('確定清空普通／一般／困難全部排行榜嗎？此操作無法復原。'))return;
@@ -977,7 +1090,7 @@ body{background:linear-gradient(155deg,#f3f8ff 0%,#fff7fb 48%,#f4f3f8 100%);min-
     adminRoom.querySelector('.room-clear-games').addEventListener('click',()=>{
       const count=loadGameLogs(adminRoomContext).length;if(!count){roomGameMsg.textContent='目前沒有遊戲紀錄。';return}
       if(!confirm('確定清空全部遊戲紀錄嗎？此操作無法復原。'))return;
-      try{localStorage.removeItem(scopedKey(gameLogStorageKey,adminRoomContext));roomGameMsg.textContent='遊戲紀錄已清空。';roomGameMsg.className='room-game-msg ok';renderGameLogs()}catch(_){roomGameMsg.textContent='清空失敗，瀏覽器無法寫入儲存空間。'}
+      try{localStorage.removeItem(scopedKey(gameLogStorageKey,adminRoomContext));sharedDelete(gameLogStorageKey,adminRoomContext);roomGameMsg.textContent='遊戲紀錄已清空。';roomGameMsg.className='room-game-msg ok';renderGameLogs()}catch(_){roomGameMsg.textContent='清空失敗，瀏覽器無法寫入儲存空間。'}
     });
 
     const roomWinnerPeriods=adminRoom.querySelector('.room-winner-periods'),roomWinnerBody=adminRoom.querySelector('.room-winner-table tbody'),roomWinnerWrap=adminRoom.querySelector('.room-winner-table-wrap'),roomWinnerTitle=adminRoom.querySelector('.room-winner-title'),roomWinnerRange=adminRoom.querySelector('.room-winner-range'),roomWinnerCount=adminRoom.querySelector('.room-winner-count'),roomWinnerMsg=adminRoom.querySelector('.room-winner-msg'),roomCopyWinners=adminRoom.querySelector('.room-copy-winners');
@@ -1483,7 +1596,7 @@ rankClose.addEventListener('click',closeRank);
       const lines=sh.querySelector('.prize-items').value.split(/\n+/).map(x=>x.trim()).filter(Boolean),items=[];for(const line of lines){const parts=line.split(/[,，]/),name=(parts[0]||'').trim(),qty=Math.floor(Number(parts[1]));if(!name||!Number.isFinite(qty)||qty<=0){prizeMsg.textContent='獎品格式錯誤：'+line;return}items.push({name,qty})}if(!items.length){prizeMsg.textContent='至少需要設定一項獎品。';return}
       const total=items.reduce((a,x)=>a+x.qty,0);let quota='';if(quotaRaw!==''){quota=Math.floor(Number(quotaRaw));if(!Number.isFinite(quota)||quota<0){prizeMsg.textContent='發獎額度格式不正確。';return}if(quota>total){prizeMsg.textContent='發獎額度不能大於獎品總數 '+total+'。';return}}
       const old=readPrizeCfg(),st=readPrizeState(),changed=!old||JSON.stringify(old.items)!==JSON.stringify(items)||old.start!==start||old.end!==end;
-      const cfg={start,end,quota,perPlayer:per,items};try{localStorage.setItem(prizeKey(PRIZE_CFG_KEY),JSON.stringify(cfg));if(changed)resetPrizeStateWithArchive(old,st);prizeMsg.textContent='獎品設定已儲存。';renderPrizeStatus(cfg,readPrizeState())}catch(e){prizeMsg.textContent='儲存失敗，瀏覽器無法寫入儲存空間。'}
+      const cfg={start,end,quota,perPlayer:per,items};try{localStorage.setItem(prizeKey(PRIZE_CFG_KEY),JSON.stringify(cfg));sharedWrite(PRIZE_CFG_KEY,adminRoomContext,cfg);if(changed)resetPrizeStateWithArchive(old,st);prizeMsg.textContent='獎品設定已儲存。';renderPrizeStatus(cfg,readPrizeState())}catch(e){prizeMsg.textContent='儲存失敗，瀏覽器無法寫入儲存空間。'}
     });
     const roomSaveMasterPass=adminRoom.querySelector('.room-save-master-pass');
     const roomSaveDeputyPass=adminRoom.querySelector('.room-save-deputy-pass');
@@ -1551,8 +1664,9 @@ rankClose.addEventListener('click',closeRank);
     if(push) history.pushState({balloon:'menu'},'', '#balloon-menu');
   }
 
-  function mountGame(mode){
+  async function mountGame(mode){
     clearGame();
+    await Promise.all([syncSharedKey('balloonPrizeConfigV1','master'),syncSharedKey('balloonPrizeStateV1','master'),syncSharedKey('balloonPrizeConfigV1','deputy'),syncSharedKey('balloonPrizeStateV1','deputy')]);
     shell.style.display='block';
 
     const pack=PKG.games[mode];
