@@ -1757,11 +1757,13 @@ rankClose.addEventListener('click',closeRank);
   async function commitPrizeCold(room,claim){
     const cfg=localSharedRead('balloonPrizeConfigV1',room);
     if(!cfg||!claim||!claim.name)return {ok:false};
-    const now=Date.now(),a=cfg.start?new Date(cfg.start).getTime():NaN,b=cfg.end?new Date(cfg.end).getTime():NaN;
+    const claimTime=Date.now(),now=claimTime,a=cfg.start?new Date(cfg.start).getTime():NaN,b=cfg.end?new Date(cfg.end).getTime():NaN;
     if(!Number.isFinite(a)||!Number.isFinite(b)||now<a||now>b)return {ok:false};
     const result=await sharedTxn('balloonPrizeStateV1',room,current=>{
       const st=current&&typeof current==='object'?JSON.parse(JSON.stringify(current)):{awarded:0,items:{},winners:{},cold:0,coldPlayers:{},logs:[]};
       st.awarded=Math.max(0,Number(st.awarded)||0);st.items=st.items&&typeof st.items==='object'?st.items:{};st.winners=st.winners&&typeof st.winners==='object'?st.winners:{};st.cold=Math.max(0,Number(st.cold)||0);st.coldPlayers=st.coldPlayers&&typeof st.coldPlayers==='object'?st.coldPlayers:{};st.logs=Array.isArray(st.logs)?st.logs:[];
+      const latestAwardTime=st.logs.reduce((m,x)=>{const t=new Date(x&&x.time||0).getTime();return Number.isFinite(t)&&t>m?t:m},0);
+      if(latestAwardTime>=claimTime)return SHARED_ABORT;
       const per=Math.max(1,Math.floor(Number(cfg.perPlayer)||1));if(Math.max(0,Number(st.winners[claim.name])||0)>=per)return SHARED_ABORT;
       const quota=cfg.quota===''||cfg.quota==null?Infinity:Math.max(0,Math.floor(Number(cfg.quota)||0));if(st.awarded>=quota)return SHARED_ABORT;
       const hasStock=(Array.isArray(cfg.items)?cfg.items:[]).some(item=>{const total=Math.max(0,Math.floor(Number(item&&item.qty)||0)),used=Math.max(0,Math.floor(Number(st.items[item&&item.name])||0));return total>used});if(!hasStock)return SHARED_ABORT;
