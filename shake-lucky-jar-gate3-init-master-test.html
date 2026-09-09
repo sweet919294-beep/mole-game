@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>搖搖幸運罐 Gate 3 初始化</title>
+<style>
+body{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#f7f7f9;margin:0;padding:24px;color:#222}
+.card{max-width:520px;margin:8vh auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 30px #0001}
+h1{font-size:22px;margin:0 0 12px}.note{font-size:14px;line-height:1.6;color:#555}
+input,button{box-sizing:border-box;width:100%;font-size:16px;padding:13px 14px;border-radius:12px;margin-top:12px}
+input{border:1px solid #ccc}button{border:0;background:#222;color:#fff;font-weight:700}
+button:disabled{opacity:.5}.status{margin-top:16px;padding:12px;border-radius:12px;background:#f1f2f4;white-space:pre-wrap;line-height:1.5}
+.ok{background:#eaf7ee}.bad{background:#fdeeee}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>搖搖幸運罐｜Gate 3 初始化</h1>
+<div class="note">一次性測試工具。只建立 master 房 Gate 3 測試期設定：15 秒、最多 3 次。需要正式 Firebase 主控密碼。</div>
+<input id="pw" type="password" autocomplete="current-password" placeholder="Firebase 主控密碼">
+<button id="go">驗證並建立測試設定</button>
+<div id="status" class="status">尚未執行。沒有寫入任何資料。</div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+<script>
+(()=>{
+const firebaseConfig={
+ apiKey:"AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU",
+ authDomain:"mole-game-3073f.firebaseapp.com",
+ databaseURL:"https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId:"mole-game-3073f",
+ storageBucket:"mole-game-3073f.firebasestorage.app",
+ messagingSenderId:"942915688837",
+ appId:"1:942915688837:web:4e6584ad32100b2cc24cec"
+};
+const MASTER_EMAIL="sweet919294@gmail.com";
+const MASTER_UID="CsJssZzlp4PkPEnXk8FxyOyc2pk1";
+const TARGET="shakeLuckyV1/master/periods/gate3-test-20260909/settings";
+const EXPECTED={seconds:15,maxPlays:3};
+const app=firebase.apps.length?firebase.app():firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.database();
+const go=document.getElementById("go"), pw=document.getElementById("pw"), status=document.getElementById("status");
+function show(t,cls=""){status.textContent=t;status.className="status "+cls}
+go.onclick=async()=>{
+ const password=pw.value;
+ if(!password){show("請輸入 Firebase 主控密碼。","bad");return}
+ go.disabled=true; show("驗證中…");
+ try{
+   const cred=await auth.signInWithEmailAndPassword(MASTER_EMAIL,password);
+   if(!cred.user||cred.user.uid!==MASTER_UID){
+     await auth.signOut(); throw new Error("UID_MISMATCH");
+   }
+   const ref=db.ref(TARGET);
+   const before=await ref.once("value");
+   if(before.exists()){
+     const v=before.val()||{};
+     if(v.seconds===15&&v.maxPlays===3){
+       show("PASS：測試設定原本就已存在且完全正確。\n沒有重寫資料。\n"+TARGET+"\nseconds = 15\nmaxPlays = 3","ok");
+     }else{
+       show("STOP：目標路徑已存在其他資料，為避免覆蓋，沒有寫入。\n現值："+JSON.stringify(v),"bad");
+     }
+     return;
+   }
+   await ref.set(EXPECTED);
+   const after=await ref.once("value");
+   const v=after.val()||{};
+   if(v.seconds===15&&v.maxPlays===3){
+     show("PASS：Gate 3 測試設定建立完成。\n"+TARGET+"\nseconds = 15\nmaxPlays = 3","ok");
+   }else{
+     show("FAIL：寫入後回讀不一致。請停止後續測試。","bad");
+   }
+ }catch(e){
+   console.error(e);
+   show("FAIL：未建立測試設定。\n"+(e&&e.code?e.code:(e&&e.message?e.message:String(e))),"bad");
+ }finally{
+   pw.value="";
+   go.disabled=false;
+ }
+};
+})();
+</script>
+</body>
+</html>
