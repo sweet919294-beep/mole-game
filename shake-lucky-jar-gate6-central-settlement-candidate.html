@@ -85,7 +85,8 @@ button:active{transform:translateY(2px)}
 <div id="roundResult">
   <div class="roundCard">
     <h2>時間到！</h2>
-    <p id="roundSettlementMsg">本局搖動完成。<br>正在進行中央結算…</p>
+    <p>本局搖動完成。</p>
+    <div id="gate6SettlementStatus" style="margin:-4px 0 14px;font-size:13px;font-weight:900;color:#6b7690;line-height:1.5">中央結算：正在建立本局中央紀錄…</div>
     <button id="roundAgainBtn">再玩一局</button>
     <div id="roundPlayProgress" style="margin-top:10px;font-weight:800;color:#6b5772;">本期遊玩次數：— / —</div>
   </div>
@@ -151,25 +152,15 @@ motion.addEventListener('click',async()=>{try{if(typeof DeviceMotionEvent==='und
    cancelAnimationFrame(raf);
    raf=requestAnimationFrame(tick);
  }
- async function finish(){
+ function finish(){
    running=false;
    cancelAnimationFrame(raf);
    paint(0);
    lock.style.display='block';
-   const settlementMsg=document.getElementById('roundSettlementMsg');
-   if(settlementMsg)settlementMsg.innerHTML='本局搖動完成。<br>正在進行中央結算…';
+   resultLayer.style.display='flex';
    try{
      window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));
    }catch(_){}
-   try{
-     if(typeof window.shakeLuckyCentralSettle!=='function')throw Error('settlement unavailable');
-     const settled=await window.shakeLuckyCentralSettle();
-     if(!settled||settled.status!=='SETTLED')throw Error('settlement failed');
-     if(settlementMsg)settlementMsg.innerHTML='本局搖動完成。<br>中央結算已完成。';
-   }catch(e){
-     if(settlementMsg)settlementMsg.innerHTML='本局搖動完成。<br>中央結算未完成，這不是未中獎結果。';
-   }
-   resultLayer.style.display='flex';
  }
  startBtn.addEventListener('click',start);
  againBtn.addEventListener('click',start);
@@ -178,30 +169,10 @@ motion.addEventListener('click',async()=>{try{if(typeof DeviceMotionEvent==='und
 })();
 </script>
 
-<script id="gate6-central-settlement">
-(()=>{
-const DBROOT='https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app',DB=DBROOT+'/shakeLuckyV1';
-async function readJson(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('GET '+r.status);return r.json()}
-async function centralSettle(){
-  if(typeof window.shakeLuckySettlementContext!=='function')throw Error('missing context');
-  const ctx=window.shakeLuckySettlementContext();
-  if(!ctx||!['master','deputy'].includes(ctx.room)||!ctx.periodId||!ctx.playerId)throw Error('bad context');
-  const settings=await readJson(`${DB}/${ctx.room}/periods/${ctx.periodId}/settings.json`);
-  if(!settings||typeof settings!=='object')throw Error('missing settings');
-  const player=await readJson(`${DB}/${ctx.room}/periods/${ctx.periodId}/players/${ctx.playerId}.json`);
-  if(!player||Math.max(0,Math.floor(Number(player.used)||0))<1)throw Error('missing reservation');
-  const prizes=await readJson(`${DB}/${ctx.room}/periods/${ctx.periodId}/prizes.json`);
-  if(!prizes||typeof prizes!=='object'||!Object.keys(prizes).length)throw Error('missing prizes');
-  return {status:'SETTLED',room:ctx.room,periodId:ctx.periodId,playerId:ctx.playerId,outcome:'UNDECIDED'};
-}
-window.shakeLuckyCentralSettle=centralSettle;
-})();
-</script>
-
 <script id="gate4-player-activity">
 (()=>{
 const DBROOT='https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app',DB=DBROOT+'/shakeLuckyV1';const nameInput=document.getElementById('playerName'),quotaInfo=document.getElementById('playQuotaInfo'),msg=document.getElementById('playerGateMsg'),startBtn=document.getElementById('roundStartBtn'),againBtn=document.getElementById('roundAgainBtn'),playProgress=document.getElementById('roundPlayProgress');let activeRoom='',periodId='',maxPlays=0,currentUsed=0,status='',clockOffset=0;async function syncClock(){try{const r=await fetch(DBROOT+'/.info/serverTimeOffset.json',{cache:'no-store'});if(r.ok)clockOffset=Number(await r.json())||0}catch(e){}}function nowMs(){return Date.now()+clockOffset}
-function pid(){const k='shakeLuckyPlayerIdV1';let v=localStorage.getItem(k);if(!v){v='p_'+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));localStorage.setItem(k,v)}return v}const playerId=pid();window.shakeLuckySettlementContext=()=>({room:activeRoom,periodId,playerId});
+function pid(){const k='shakeLuckyPlayerIdV1';let v=localStorage.getItem(k);if(!v){v='p_'+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));localStorage.setItem(k,v)}return v}const playerId=pid();
 async function get(url,etag=false){const r=await fetch(url,{headers:etag?{'X-Firebase-ETag':'true'}:{},cache:'no-store'});if(!r.ok)throw Error('GET '+r.status);return {value:await r.json(),etag:r.headers.get('ETag')}}
 function withinPreset(s,now=nowMs()){const a=Number(s?.plannedStartAt),b=Number(s?.plannedEndAt);return Number.isFinite(a)&&Number.isFinite(b)&&b>a&&now>=a&&now<=b}async function loadActivity(){await syncClock();activeRoom='';periodId='';for(const candidate of ['master','deputy']){const cp=await get(`${DB}/${candidate}/currentPeriod.json`),id=cp.value||'';if(!id)continue;const s=await get(`${DB}/${candidate}/periods/${id}/settings.json`);if(s.value?.status==='active'&&withinPreset(s.value)){activeRoom=candidate;periodId=id;status='active';maxPlays=Number(s.value?.maxPlays)||0;const seconds=Number(s.value?.seconds)||0;if(![1,2,3].includes(maxPlays)||![15,20,30].includes(seconds))throw Error('bad settings');window.shakeLuckyRoundSeconds=seconds;const hint=document.getElementById('roundSecondsHint');if(hint)hint.textContent=String(seconds);return s.value}}throw Error('inactive')}
 function used(v){return Math.max(0,Math.floor(Number(v?.used)||0))}function paint(v){currentUsed=used(v);const rem=Math.max(0,maxPlays-currentUsed);quotaInfo.textContent=`本期剩餘次數：${rem} / ${maxPlays}`;return rem}function result(){if(!maxPlays)return;playProgress.textContent=`本期遊玩次數：${currentUsed} / ${maxPlays}`;againBtn.disabled=currentUsed>=maxPlays;againBtn.textContent=currentUsed>=maxPlays?'本期次數已用完':'再玩一局'}
@@ -222,6 +193,75 @@ $('saTabActivity').onclick=()=>showAdminTab('activity');$('saTabPrizes').onclick
 $('saStart').onclick=async()=>{try{await syncClock();let st=await state();if(!st.id||st.s?.status!=='draft'){$('saMsg').textContent='請先儲存本期活動設定。';return}const r=presetRange(st.s),now=nowMs();if(!r){$('saMsg').textContent='請先設定並儲存預設活動時間。';return}if(now>=r.b){$('saMsg').textContent='預設活動時間已結束，請重新設定新一期。';return}const other=room==='master'?'deputy':'master',oid=await read(`${other}/currentPeriod`);if(oid){const os=await read(`${other}/periods/${oid}/settings`),or=presetRange(os);if(os?.status==='active'&&or&&r.a<or.b&&or.a<r.b){$('saMsg').textContent='另一個房間已有重疊的活動排程，請先結束該活動。';return}}const s={...st.s,status:'active',startedAt:r.a,endedAt:null};await req(`${room}/periods/${st.id}/settings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(s)});$('saMsg').textContent=now<r.a?'本期排程已啟用，將於預設開始時間自動開始。':'本期活動已開始。';refresh()}catch(e){$('saMsg').textContent='開始失敗：請確認中央連線與 Gate 4 Firebase Rules。'}};
 $('saEnd').onclick=async()=>{if(!confirm('確定要提前結束本期活動嗎？結束後玩家將無法再開始新局。'))return;try{const st=await state();if(!st.id||st.s?.status!=='active')return;const s={...st.s,status:'ended',endedAt:Date.now()};await req(`${room}/periods/${st.id}/settings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(s)});$('saMsg').textContent='本期活動已結束。';refresh()}catch(e){$('saMsg').textContent='結束失敗：請確認中央連線與 Gate 4 Firebase Rules。'}};$('saMusic').onclick=()=>{$('saMsg').textContent='Music 位置保留；正式音樂交接於 Gate 12 整合。'};
 setInterval(()=>{if(role)refresh();if(typeof window.shakeLuckyRefreshPlayerActivity==='function')window.shakeLuckyRefreshPlayerActivity()},10000);
+})();
+</script>
+
+<script id="gate6-central-settlement">
+(()=>{
+const DBROOT='https://mole-game-3073f-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DB=DBROOT+'/shakeLuckyV1';
+const statusBox=document.getElementById('gate6SettlementStatus');
+const startBtn=document.getElementById('roundStartBtn');
+const againBtn=document.getElementById('roundAgainBtn');
+const resultLayer=document.getElementById('roundResult');
+const playerNameInput=document.getElementById('playerName');
+let roundCtx=null,opening=false,currentSettlement=null,lastResultVisible=false;
+function setStatus(t){if(statusBox)statusBox.textContent=t}
+function playerId(){try{return localStorage.getItem('shakeLuckyPlayerIdV1')||''}catch(_){return ''}}
+async function readJson(path){const r=await fetch(`${DB}/${path}.json`,{cache:'no-store'});if(!r.ok)throw Error('GET '+r.status);return r.json()}
+async function token(){
+ if(!window.firebase||!firebase.auth)throw Error('AUTH_UNAVAILABLE');
+ if(!firebase.apps.length)firebase.initializeApp({apiKey:'AIzaSyDlO-SmVwkR4IZnzmVEA9wNfS983DzlxLU',authDomain:'mole-game-3073f.firebaseapp.com',projectId:'mole-game-3073f',appId:'1:942915688837:web:4e6584ad32100b2cc24cec'});
+ if(!firebase.auth().currentUser)await firebase.auth().signInAnonymously();
+ return firebase.auth().currentUser.getIdToken();
+}
+async function createJson(path,body){
+ const t=await token();
+ const r=await fetch(`${DB}/${path}.json?auth=${encodeURIComponent(t)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});
+ if(!r.ok)throw Error('WRITE '+r.status);
+ return r.status===204?null:r.json();
+}
+function safeId(v){return String(v||'').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,160)}
+function withinPreset(s,now=Date.now()){const a=Number(s?.plannedStartAt),b=Number(s?.plannedEndAt);return Number.isFinite(a)&&Number.isFinite(b)&&b>a&&now>=a&&now<=b}
+async function resolveRoundContext(){
+ const pid=playerId();if(!pid)throw Error('NO_PLAYER_ID');
+ const active=[];
+ for(const room of ['master','deputy']){
+  const periodId=await readJson(`${room}/currentPeriod`);if(!periodId)continue;
+  const settings=await readJson(`${room}/periods/${periodId}/settings`);
+  if(settings?.status==='active'&&withinPreset(settings))active.push({room,periodId:String(periodId),settings});
+ }
+ if(active.length!==1)throw Error(active.length?'MULTIPLE_ACTIVE_ROOMS':'NO_ACTIVE_ROOM');
+ const x=active[0],player=await readJson(`${x.room}/periods/${x.periodId}/players/${pid}`);
+ if(!player||!Number.isFinite(Number(player.lastStartAt)))throw Error('ROUND_CONTEXT_NOT_FOUND');
+ const ctx={room:x.room,periodId:x.periodId,playerId:pid,playerName:String(player.name||playerNameInput?.value||'').trim(),playNumber:Math.max(1,Math.floor(Number(player.used)||1)),roundSeconds:Number(x.settings.seconds)||15,startedAt:Number(player.lastStartAt)};
+ ctx.roundId=safeId(`r_${ctx.room}_${ctx.playerId}_${ctx.startedAt}`);
+ return ctx;
+}
+async function captureRound(){
+ try{roundCtx=await resolveRoundContext();currentSettlement=null;setStatus('中央結算：本局已綁定中央資料，等待時間到。')}
+ catch(_){roundCtx=null;currentSettlement=null;setStatus('中央結算：本局資料尚未取得。')}
+}
+async function openSettlement(){
+ if(opening||currentSettlement)return currentSettlement;opening=true;
+ const priorAgainDisabled=!!againBtn?.disabled;if(againBtn)againBtn.disabled=true;let opened=false;
+ try{
+  if(!roundCtx)roundCtx=await resolveRoundContext();
+  const finishedAt=Date.now();
+  const payload={version:1,roundId:roundCtx.roundId,playerId:roundCtx.playerId,playerName:roundCtx.playerName,playNumber:roundCtx.playNumber,roundSeconds:roundCtx.roundSeconds,startedAt:roundCtx.startedAt,finishedAt,state:'AWAITING_DECISION',outcome:'UNDECIDED',createdAt:finishedAt};
+  const path=`${roundCtx.room}/periods/${roundCtx.periodId}/settlements/${roundCtx.roundId}`;
+  await createJson(path,payload);
+  currentSettlement={path,room:roundCtx.room,periodId:roundCtx.periodId,...payload};
+  setStatus('中央結算：本局中央紀錄已成立。');
+  window.dispatchEvent(new CustomEvent('shakeLuckySettlementOpened',{detail:{...currentSettlement}}));opened=true;return currentSettlement;
+ }catch(e){setStatus('中央結算未完成；本局不會被誤判成未中獎。');window.dispatchEvent(new CustomEvent('shakeLuckySettlementFailed',{detail:{stage:'open',message:String(e&&e.message||e)}}));throw e}
+ finally{opening=false;if(opened&&againBtn)againBtn.disabled=priorAgainDisabled}
+}
+function onApprovedStart(){setTimeout(captureRound,0)}
+startBtn?.addEventListener('click',onApprovedStart);againBtn?.addEventListener('click',onApprovedStart);
+const obs=new MutationObserver(()=>{const visible=resultLayer&&getComputedStyle(resultLayer).display!=='none';if(visible&&!lastResultVisible)openSettlement().catch(()=>{});lastResultVisible=visible});
+if(resultLayer)obs.observe(resultLayer,{attributes:true,attributeFilter:['style','class']});
+window.shakeLuckyGate6={getCurrent:()=>currentSettlement?{...currentSettlement}:null,open:openSettlement,schemaVersion:1};
 })();
 </script>
 </body></html>
