@@ -1109,36 +1109,48 @@ function remainingPrizes(config,runtime){
  return Object.entries(config?.prizes||{}).map(([id,p])=>({id,name:String(p?.name||'').trim(),order:n(p?.order,9999),qty:Math.max(0,Math.floor(n(p?.qty))),rarity:p?.rarity==='rare'?'rare':'normal',used:Math.max(0,Math.floor(n(used[id]))) })).map(p=>({...p,remaining:Math.max(0,p.qty-p.used)})).filter(p=>p.name&&p.remaining>0);
 }
 function settlementTimes(settlements){return Object.values(settlements||{}).map(x=>n(x?.createdAt)).filter(x=>x>0).sort((a,b)=>a-b)}
+function eligibleSettlementTimes(settlements){return Object.values(settlements||{}).filter(x=>x?.effectiveAction===true).map(x=>n(x?.createdAt)).filter(x=>x>0).sort((a,b)=>a-b)}
 function pacingProbability(settings,config,runtime,settlements,now){
  const prizes=remainingPrizes(config,runtime),remainingInventory=prizes.reduce((a,p)=>a+p.remaining,0);
  if(!remainingInventory)return 0;
  const start=n(settings?.plannedStartAt),end=n(settings?.plannedEndAt),duration=Math.max(1,end-start),elapsed=clamp(now-start,0,duration),remainMs=Math.max(0,end-now),progress=clamp(elapsed/duration,0,1);
- const issued=Math.max(0,Math.floor(n(runtime?.consumed?.period))),times=settlementTimes(settlements),rounds=Math.max(1,times.length);
- const elapsedMin=Math.max(1,elapsed/60000),remainMin=Math.max(0.25,remainMs/60000),overallRate=rounds/elapsedMin;
- const recentWindow=Math.min(elapsed,Math.max(5*60000,duration*.18)),recentCut=now-recentWindow,recentRounds=times.filter(t=>t>=recentCut).length,recentRate=recentRounds/Math.max(1,recentWindow/60000);
- let flowFactor=1;
- if(rounds>=6&&recentRate>overallRate*1.35)flowFactor=.90;
- else if(rounds>=6&&progress>.20&&recentRate<overallRate*.65)flowFactor=1.10;
+ const issued=Math.max(0,Math.floor(n(runtime?.consumed?.period))),allTimes=settlementTimes(settlements),allRounds=Math.max(1,allTimes.length),elapsedMin=Math.max(1,elapsed/60000),remainMin=Math.max(.10,remainMs/60000);
  let p;
  const limit=Number(config?.awardLimit);
  if(Number.isInteger(limit)&&limit>0){
    const remainingTarget=Math.max(0,Math.min(limit-issued,remainingInventory));
    if(!remainingTarget)return 0;
-   const expectedRemainingRounds=Math.max(1,overallRate*remainMin);
-   const need=remainingTarget/Math.max(remainingTarget,expectedRemainingRounds);
-   const targetByNow=limit*progress,error=(targetByNow-issued)/Math.max(1,limit);
-   const paceFactor=clamp(1+error*1.6,.78,1.24);
-   p=need*paceFactor*flowFactor;
+   /* Fixed-total mode: only prize-eligible rounds are flow evidence. The controller
+      deliberately keeps a reserve against player flow disappearing later, instead
+      of assuming the current rate will continue unchanged until the final minute. */
+   const times=eligibleSettlementTimes(settlements),rounds=Math.max(1,times.length),overallRate=rounds/elapsedMin;
+   const recentWindow=Math.min(elapsed,Math.max(3*60000,duration*.15)),recentCut=now-recentWindow,recentRounds=times.filter(t=>t>=recentCut).length,recentRate=recentRounds/Math.max(1,recentWindow/60000);
+   const forecastRate=rounds<8?overallRate:clamp(overallRate*.50+recentRate*.50,overallRate*.30,overallRate*1.10);
+   const reserve=progress<.20?.85:progress<.60?.78:progress<.82?.70:.62;
+   const expectedRemainingEligible=Math.max(1,forecastRate*remainMin*reserve);
+   const need=remainingTarget/expectedRemainingEligible;
+   const uniquePlayers=new Set(Object.values(settlements||{}).map(x=>x?.playerId).filter(Boolean)).size;
+   const maxPlays=Math.max(1,Math.floor(n(settings?.maxPlays,3))),knownOpportunityCapacity=Math.max(1,uniquePlayers*maxPlays);
+   const knownPlayerFloor=knownOpportunityCapacity<limit?Math.min(.68,limit/knownOpportunityCapacity):limit/knownOpportunityCapacity;
+   const targetProgress=1-Math.pow(1-progress,1.35),targetByNow=limit*targetProgress,lag=Math.max(0,targetByNow-issued);
+   const catchup=lag/Math.max(1,forecastRate*2.5);
+   p=Math.max(need,knownPlayerFloor,catchup);
+   return clamp(p,.04,1);
  }else{
-   /* 小確幸：no hidden total target. Stable baseline, only gentle time/flow/inventory shaping. */
+   /* 小確幸：no hidden total target. Existing behavior remains unchanged. */
+   const overallRate=allRounds/elapsedMin;
+   const recentWindow=Math.min(elapsed,Math.max(5*60000,duration*.18)),recentCut=now-recentWindow,recentRounds=allTimes.filter(t=>t>=recentCut).length,recentRate=recentRounds/Math.max(1,recentWindow/60000);
+   let flowFactor=1;
+   if(allRounds>=6&&recentRate>overallRate*1.35)flowFactor=.90;
+   else if(allRounds>=6&&progress>.20&&recentRate<overallRate*.65)flowFactor=1.10;
    const initialInventory=Object.values(config?.prizes||{}).reduce((a,p)=>a+Math.max(0,Math.floor(n(p?.qty))),0);
    const stockRatio=initialInventory?remainingInventory/initialInventory:0;
    const stockFactor=stockRatio<.15?.72:stockRatio<.30?.86:1;
    const timeFactor=progress<.20?1.08:(progress>.65&&flowFactor>1?1.06:1);
    p=.28*stockFactor*timeFactor*flowFactor;
+   if(progress<.18)p*=1.06;
+   return clamp(p,.04,.68);
  }
- if(progress<.18)p*=1.06; // modest opening attractiveness, never a guarantee
- return clamp(p,.04,.68);
 }
 function playerDistributionFactor(settings,runtime,settlements,playerId){
  const wins=Math.max(0,Math.floor(n(runtime?.consumed?.players?.[playerId])));if(!wins)return 1;
@@ -1182,7 +1194,7 @@ async function commit(settlement){
  for(let attempt=0;attempt<4;attempt++){
   const runtime=(await getJson(`${base}/award/runtime`,token)).value||{};if(runtime?.rounds?.[settlement.roundId])return runtime.rounds[settlement.roundId];
   const prizes=remainingPrizes(config,runtime),initialRareTotal=Object.values(config?.prizes||{}).reduce((a,p)=>a+(p?.rarity==='rare'?Math.max(0,Math.floor(n(p?.qty))):0),0),playerWins=Math.max(0,Math.floor(n(runtime?.consumed?.players?.[settlement.playerId]))),playerLimit=Math.max(0,Math.floor(n(config?.perPlayerWinLimit)));
-  const eligible=settlement?.effectiveAction===true,now=Date.now(),baseP=eligible?pacingProbability(settings,config,runtime,settlementsR.value||{},now):0,fairness=playerDistributionFactor(settings,runtime,settlementsR.value||{},settlement.playerId),p=clamp(baseP*fairness,0,.68),canWin=eligible&&prizes.length>0&&playerLimit>0&&playerWins<playerLimit,prize=canWin&&randomWin<p?choosePrize(prizes,randomPrize,settings,now,randomRareRelease,initialRareTotal):null,decision=prize?{outcome:'WIN',prize}:{outcome:'NO_WIN'},built=buildPatch(runtime,settlement,decision,now);
+  const eligible=settlement?.effectiveAction===true,now=Date.now(),baseP=eligible?pacingProbability(settings,config,runtime,settlementsR.value||{},now):0,fairness=playerDistributionFactor(settings,runtime,settlementsR.value||{},settlement.playerId),targetMode=Number.isInteger(Number(config?.awardLimit))&&Number(config.awardLimit)>0,appliedFairness=targetMode&&baseP>=.75?1:fairness,p=clamp(baseP*appliedFairness,0,targetMode?1:.68),canWin=eligible&&prizes.length>0&&playerLimit>0&&playerWins<playerLimit,prize=canWin&&randomWin<p?choosePrize(prizes,randomPrize,settings,now,randomRareRelease,initialRareTotal):null,decision=prize?{outcome:'WIN',prize}:{outcome:'NO_WIN'},built=buildPatch(runtime,settlement,decision,now);
   const r=await fetch(`${DB}/${base}/award/runtime.json?auth=${encodeURIComponent(token)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(built.patch),cache:'no-store'});
   if(r.ok)return built.formal;
   if(r.status===401||r.status===412){const latest=(await getJson(`${base}/award/runtime`,token)).value||{};if(latest?.rounds?.[settlement.roundId])return latest.rounds[settlement.roundId];continue}
