@@ -50,6 +50,11 @@ button:active{transform:translateY(2px)}
 }
 </style>
 
+<style id="player-start-guide-style">
+.playerStartGuide{margin:0 0 12px;padding:10px 12px;border-radius:14px;background:rgba(255,231,241,.8);color:#6b5474;font-size:14px;font-weight:850;line-height:1.55;text-align:left}
+.playerStartGuide div+div{margin-top:6px}
+@media(max-height:620px){.roundCard{padding-top:14px;padding-bottom:14px}.playerStartGuide{padding:7px 10px;font-size:13px;line-height:1.4;margin-bottom:8px}}
+</style>
 <style id="gate3-player-style">
 #playerGateFields{margin:12px 0 4px;text-align:left}
 #playerGateFields label{display:block;margin:0 0 6px 4px;font-size:13px;font-weight:900;color:#7d89a3}
@@ -599,6 +604,10 @@ button:active{transform:translateY(2px)}
   <div class="roundCard">
     <h2>搖搖幸運罐</h2>
     <p>準備好就開始！<br><span id="roundSecondsHint">15</span> 秒內盡情搖動手機。</p>
+    <div class="playerStartGuide" role="note">
+      <div>① 輸入《瘋種菜》的遊戲名字，點擊「開始遊戲」。</div>
+      <div>② 進入遊戲後，請按右下方「啟動」，才會正式啟動搖搖！</div>
+    </div>
     <div id="playerGateFields">
       <label for="playerName">玩家暱稱</label>
       <input id="playerName" type="text" maxlength="20" autocomplete="nickname" placeholder="輸入玩家名字">
